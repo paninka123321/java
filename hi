@@ -1,93 +1,123 @@
-function(config) {
-  let $ = apex.jQuery;
+function(config){
+  var $ = apex.jQuery;
 
-  config.initialized = function() {
-    let ig$ = apex.region(config.regionStaticId).widget();
-    let view$ = ig$.interactiveGrid("getViews", "grid").view$;
+  config.initialized = function(){
+    var ig$ = apex.region(config.regionStaticId).widget();
+    var view$ = ig$.interactiveGrid("getViews","grid").view$;
 
-    let lastWydzial = null;
-    let lastKierunek = null;
+    // Usuń ewentualne stare nagłówki (jeśli odświeżamy)
+    view$.find("tr.wydzial-header, tr.kierunek-header").remove();
 
-    // Utwórz nagłówki dla wydziałów i kierunków
-    view$.find("tr.a-GV-row").each(function() {
-      let $row = $(this);
-      let wydzial = $row.find("td[data-col='WYDZIAL']").text().trim();
-      let kierunek = $row.find("td[data-col='KIERUNEK']").text().trim();
+    var lastWydzial = null;
+    var lastKierunek = null;
 
-      // --- Jeśli nowy wydział, dodaj nagłówek
-      if (wydzial !== lastWydzial) {
-        let wydzialRow = $('<tr class="wydzial-header"><td colspan="999">▼ ' + wydzial + '</td></tr>');
-        $row.before(wydzialRow);
+    // Przechodzimy po wierszach i tworzymy nagłówki wydziałów/kierunków
+    view$.find("tr.a-GV-row").each(function(){
+      var $row = $(this);
+      var wydzial = $row.find("td[data-col='WYDZIAL']").text().trim();
+      var kierunek = $row.find("td[data-col='KIERUNEK']").text().trim();
+
+      // jeśli WYDZIAL zmienił się, dodaj nagłówek wydziału (domyślnie złożony - collapsed)
+      if(wydzial !== lastWydzial){
+        var $wydzialRow = $('<tr class="wydzial-header collapsed" data-wydzial="'+wydzial+'"><td colspan="999">▶ '+wydzial+'</td></tr>');
+        $row.before($wydzialRow);
         lastWydzial = wydzial;
         lastKierunek = null;
       }
 
-      // --- Jeśli nowy kierunek w tym wydziale
-      if (kierunek !== lastKierunek) {
-        let kierunekRow = $('<tr class="kierunek-header" data-wydzial="' + wydzial + '"><td colspan="999">▼ ' + kierunek + '</td></tr>');
-        $row.before(kierunekRow);
+      // jeśli KIERUNEK zmienił się, dodaj nagłówek kierunku (domyślnie ukryty)
+      if(kierunek !== lastKierunek){
+        var $kierRow = $('<tr class="kierunek-header collapsed" data-wydzial="'+wydzial+'" data-kierunek="'+kierunek+'" style="display:none;"><td colspan="999">▶ '+kierunek+'</td></tr>');
+        $row.before($kierRow);
         lastKierunek = kierunek;
       }
 
-      // --- Oznacz wiersz (żeby JS wiedział, co do czego należy)
-      $row.attr("data-wydzial", wydzial);
-      $row.attr("data-kierunek", kierunek);
+      // Oznacz wiersz danymi (będziemy nimi sterować)
+      $row.attr("data-wydzial", wydzial).attr("data-kierunek", kierunek);
+
+      // Domyślnie ukryj wszystkie wiersze z przedmiotami (pokażemy je po kliknięciu kierunku)
+      $row.hide();
     });
 
-    // --- Kliknięcie Wydziału
-    view$.on("click", "tr.wydzial-header", function() {
-      let $header = $(this);
-      let wydzial = $header.text().replace(/^▼|▶/g, '').trim();
-      let isCollapsed = $header.hasClass("collapsed");
+    // Kliknięcie w nagłówek WYDZIAL -> pokaż/ukryj kierunki (ale nie pokazuj jeszcze przedmiotów)
+    view$.on("click", "tr.wydzial-header", function(){
+      var $hdr = $(this);
+      var wydzial = $hdr.attr("data-wydzial");
+      var collapsed = $hdr.hasClass("collapsed");
 
-      if (isCollapsed) {
-        // Rozwiń
-        $header.removeClass("collapsed").find("td").text("▼ " + wydzial);
+      if(collapsed){
+        // Rozwiń: pokaż kierunki należące do tego wydziału (nagłówki kierunków)
+        $hdr.removeClass("collapsed").find("td").text("▼ " + wydzial);
         view$.find("tr.kierunek-header[data-wydzial='" + wydzial + "']").show();
+        // upewnij się, że wiersze przedmiotów pozostają ukryte (dopiero kliknięcie Kierunku je pokaże)
+        view$.find("tr[data-wydzial='" + wydzial + "']").not(".wydzial-header, .kierunek-header").hide();
       } else {
-        // Zwiń
-        $header.addClass("collapsed").find("td").text("▶ " + wydzial);
-        view$.find("tr.kierunek-header[data-wydzial='" + wydzial + "']").hide();
-        view$.find("tr[data-wydzial='" + wydzial + "']").not(".wydzial-header").hide();
+        // Zwiń: ukryj kierunki i ich przedmioty
+        $hdr.addClass("collapsed").find("td").text("▶ " + wydzial);
+        view$.find("tr.kierunek-header[data-wydzial='" + wydzial + "']").each(function(){
+          var $k = $(this);
+          var kier = $k.attr("data-kierunek");
+          // ukryj nagłówek kierunku i wszystkie wiersze przedmiotów dla niego
+          $k.addClass("collapsed").hide().find("td").text("▶ " + kier);
+          view$.find("tr[data-wydzial='" + wydzial + "'][data-kierunek='" + kier + "']").hide();
+        });
       }
     });
 
-    // --- Kliknięcie Kierunku
-    view$.on("click", "tr.kierunek-header", function() {
-      let $header = $(this);
-      let kierunek = $header.text().replace(/^▼|▶/g, '').trim();
-      let wydzial = $header.attr("data-wydzial");
-      let isCollapsed = $header.hasClass("collapsed");
+    // Kliknięcie w nagłówek KIERUNEK -> pokaż/ukryj wiersze z przedmiotami dla tego kierunku
+    view$.on("click", "tr.kierunek-header", function(){
+      var $khdr = $(this);
+      var kierunek = $khdr.attr("data-kierunek");
+      var wydzial = $khdr.attr("data-wydzial");
+      var collapsed = $khdr.hasClass("collapsed");
 
-      if (isCollapsed) {
-        $header.removeClass("collapsed").find("td").text("▼ " + kierunek);
-        view$.find("tr[data-kierunek='" + kierunek + "'][data-wydzial='" + wydzial + "']").show();
+      if(collapsed){
+        // Rozwiń kierunek: pokaż wiersze odpowiadające kierunkowi (przedmioty i nauczyciele)
+        $khdr.removeClass("collapsed").find("td").text("▼ " + kierunek);
+        view$.find("tr[data-wydzial='" + wydzial + "'][data-kierunek='" + kierunek + "']").show();
       } else {
-        $header.addClass("collapsed").find("td").text("▶ " + kierunek);
-        view$.find("tr[data-kierunek='" + kierunek + "'][data-wydzial='" + wydzial + "']").hide();
+        // Zwiń kierunek: ukryj jego wiersze
+        $khdr.addClass("collapsed").find("td").text("▶ " + kierunek);
+        view$.find("tr[data-wydzial='" + wydzial + "'][data-kierunek='" + kierunek + "']").hide();
       }
     });
-  };
+
+    // Jeśli użytkownik użyje sortowania/filtra w IG, najlepiej po odświeżeniu odbudować nagłówki:
+    // Podpinamy się pod zdarzenie model refresh i ponownie uruchamiamy inicjalizację
+    ig$.on("interactivegridrefresh", function(){
+      // mały timeout żeby IG zdążył wyrenderować nowe wiersze, potem odbudowujemy
+      setTimeout(function(){
+        // usuwamy stare nagłówki i ponownie budujemy (wywołując samą funkcję, ale bez rekurencji)
+        view$.find("tr.wydzial-header, tr.kierunek-header").remove();
+        // pokażemy wszystkie wiersze (żeby nie zostały ukryte po refresh)
+        view$.find("tr.a-GV-row").show();
+        // REBUILD: wywołaj ponownie (najprościej: przeładuj stronę regionu)
+        ig$.interactiveGrid("refresh");
+      }, 100);
+    });
+
+  }; // end initialized
 
   return config;
 }
 
+
 css:
 .wydzial-header td {
-  font-weight: bold;
-  background-color: #cfe2f3;
-  cursor: pointer;
-  border-top: 2px solid #999;
+  font-weight: 700;
+  background:#cfe2f3;
+  cursor:pointer;
+  padding:8px 10px;
+  border-top:1px solid #aaa;
 }
 .kierunek-header td {
-  font-weight: bold;
-  background-color: #e2e2e2;
-  cursor: pointer;
-  border-top: 1px solid #ccc;
-  padding-left: 20px;
+  font-weight:600;
+  background:#efefef;
+  cursor:pointer;
+  padding:6px 20px;
+  border-top:1px solid #ddd;
 }
 .wydzial-header.collapsed td,
 .kierunek-header.collapsed td {
-  background-color: #d6d6d6;
+  opacity: 0.95;
 }
-
