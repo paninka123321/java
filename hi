@@ -1,3 +1,4 @@
+js:
 const canvas = document.getElementById("gaugeCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -5,8 +6,8 @@ const ctx = canvas.getContext("2d");
 let settings = {
   mode: "number", // "percent"
   min: 0,
-  max: 150,
-  value: 108.53,
+  max: 100,
+  value: 78.53,
   colorDirection: "red-green", // "green-red"
   thresholds: [0.25, 0.50, 0.75], // punkty zmiany koloru 
   };
@@ -116,7 +117,7 @@ applyBtn.addEventListener("click", () =>
     if (thresholds.length > 0) settings.thresholds = thresholds;
 
     // rysowanie koła
-    updateGauge(2);
+    drawGauge();
 
     panel.classList.add("hidden");
 
@@ -133,18 +134,150 @@ window.addEventListener("load", () => {
     }
 })
 
-// symulacja zwracanej temp:
-const sensorsData = {
-    1: 45.2,
-    2: 110.76,
-    3: 30.105
+index:
+<!DOCTYPE html>
+<html lang="pl">
+    <!-- settings -->
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gauge</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<!-- body of page-->
+<body>
+    <div class="gauge-widget">
+        <div class="gauge-header">
+            <span class="widget-title">Temperatura CPU</span> <!-- opcjonalnie tutaj tytuł wykresu -->
+            <div class="widget-actions">
+            <button class="icon-btn settings-btn">⚙️</button>
+            <button class="icon-btn expand-btn">⤢</button>
+            </div>
+        </div>
+
+        <div class="gauge-container">
+            <canvas id="gaugeCanvas" width="175" height="100"></canvas>
+            <div class="gauge-value">
+            <span id="gaugeValue">78.53</span><span id="unit">°C</span>
+            </div>
+            <div class="gauge-label">Temperatura CPU</div>
+        </div>
+    </div>
+
+<!-- Rozwijany panel uswtawień (przedział, gradient koloró, liczby/procenty)-->
+    <div class="settings-panel hidden" id="settingsPanel">
+        <h3>Ustawienia</h3>
+        <label>
+            - format wywietlania:
+            <select id="displayMode">
+                <option value="number">liczba</option>
+                <option value="percent">procent</option>
+            </select>
+        </label>
+        <br>
+        <label>
+            - kierunek gradientu kolorów
+            <select id="colorDirection">
+                <option value="red-green">czerwony -> zielony</option>
+                <option value="green-red">zielony -> czerwony</option>
+            </select>
+        </label>
+        <br>
+        <label>
+            - progi kolorów (do jakiej części wykresu ma iść kolor, 0ddziel przecinkami)
+            <input id="thresholdsInput" type="text" placeholder="np. 0.25, 0.75"></input>
+        </label>
+        <br>
+        <button id="applySettings">Zastosuj zmiany</button>
+    </div> 
+    <script src="script.js"></script>
+</body>
+</html>
+
+css:
+.gauge-widget {
+  width: 220px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  padding: 12px;
+  font-family: sans-serif;
+  position: relative;
 }
 
-function getTemperature(sensorId){
-    return sensorsData[sensorId] || 0;
+.gauge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
-function updateGauge(sensorId) {
-    const temp = getTemperature(sensorId);
-    settings.value = temp;
-    drawGauge();
+
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 1px;
+}
+
+.gauge-container {
+  position: relative;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.gauge-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #000;
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.gauge-label {
+  font-size: 16px;
+  color: #555;
+  margin-top: 35px;
+  margin-bottom: 5px;
+}
+
+/* panel ustawień */
+
+/* jak ma wyglądać panel - canva */
+.settings-panel {
+    position: absolute;
+    top: 40px;
+    right: 10px;
+    background-color: aliceblue;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    width: 200px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    font-size: 14px;
+    z-index: 100;
+}
+
+.settings-panel.hidden {
+    display: none;
+}
+
+.settings-panel h3 {
+    margin-top: 0;
+    font-size: 16px;
+}
+
+.settings-panel label {
+    display: block;
+    margin: 8px 0;
+}
+
+.settings-panel input, .settings-panel select {
+    width: 100%;
+    padding: 4px;
+    margin-top: 4px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
