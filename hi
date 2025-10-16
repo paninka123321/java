@@ -1,106 +1,110 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pasek baterii</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-  <!-- pojedynczy poziomy pasek baterii -->
-  <div class="battery-bar">
-    <div class="battery-info">
-      <span class="battery-icon">📱</span>
-      <span class="battery-label">This phone</span>
-    </div>
-
-    <div class="battery-progress">
-      <div class="battery-fill" id="batteryFill"></div>
-    </div>
-
-    <div class="battery-percent" id="batteryPercent">90%</div>
-  </div>
-
-  <script src="script.js"></script>
-</body>
-</html>
-
-/* wygląd całego paska */
-.battery-bar {
-  width: 250px;
+.gauge-widget {
+  width: 120px; /* kompaktowy rozmiar jak widget baterii */
+  height: 120px;
   background: #fff; /* białe tło */
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  border-radius: 16px; /* zaokrąglone narożniki */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* subtelny cień */
+  padding: 10px;
   font-family: sans-serif;
-  color: #000; /* czarny tekst i ikonka */
-}
-
-/* sekcja z ikoną i nazwą */
-.battery-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.battery-icon {
-  font-size: 18px;
-}
-
-.battery-label {
-  font-size: 14px;
-  font-weight: 500;
-}
-
-/* kontener paska postępu */
-.battery-progress {
-  flex-grow: 1;
-  height: 10px;
-  background: #ddd;
-  border-radius: 6px;
-  margin: 0 10px;
-  overflow: hidden;
   position: relative;
+  color: #000; /* ciemny tekst */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-/* kolorowy pasek */
-.battery-fill {
-  height: 100%;
-  width: 0%;
-  background: #4cd964; /* zielony kolor jak w iOS */
-  border-radius: 6px;
-  transition: width 0.4s ease-in-out; /* płynna animacja */
+/* nagłówek widgetu */
+.gauge-header {
+  display: flex;
+  /* justify-content: space-between;*/
+  align-items: center;
+  width: 100%;
 }
 
-/* procent po prawej stronie */
-.battery-percent {
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
   font-size: 14px;
+  padding: 2px;
+  color: #222; /* ciemna ikona */
+
+}
+
+.gauge-container {
+  position: relative;
+  text-align: center;
+  margin-top: 3px;
+}
+
+/* wartość w środku wykresu */
+.gauge-value {
+  font-size: 18px;
   font-weight: 600;
+  color: #222; /* ciemny tekst */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
-const fill = document.getElementById("batteryFill");
-const percentText = document.getElementById("batteryPercent");
-
-/**
- * Funkcja aktualizująca pasek
- * @param {number} value - poziom procentowy baterii (0–100)
- */
-function updateBar(value) {
-  const percent = Math.min(Math.max(value, 0), 100); // ograniczenie do zakresu
-  fill.style.width = percent + "%";
-  percentText.textContent = percent + "%";
+/* opis pod wykresem */
+.gauge-label {
+  font-size: 14px;
+  color: #666;
+  margin-top: 18px;
+  margin-bottom: 4px;
 }
 
-// przykład dynamicznej zmiany co 2 sekundy (można usunąć)
-let demo = 90;
-setInterval(() => {
-  demo = (demo + 10) % 110;
-  updateBar(demo);
-}, 2000);
+/* panel ustawień */
+/* jak ma wyglądać panel okregu */
+.settings-panel {
+  position: absolute;
+  top: 40px;
+  right: 10px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 3px;
+  width: 200px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  font-size: 13px;
+  z-index: 100;
+  color: #000;
+}
 
-// początkowe ustawienie
-updateBar(90);
+.settings-panel.hidden {
+  display: none;
+}
+
+.settings-panel h3 {
+  margin-top: 0;
+  font-size: 14px;
+  color: #000;
+}
+
+
+
+.settings-panel input,
+.settings-panel select {
+  width: 100%;
+  padding: 4px;
+  margin-top: 3px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+  color: #000;
+  font-size: 13px;
+}
+
+/* efekt hover dla ikon */
+.icon-btn:hover {
+  opacity: 0.7;
+}
+
+/* dopasowanie canvasa do mniejszego rozmiaru */
+#gaugeCanvas {
+  width: 104px;
+  height: 62px;
+}
