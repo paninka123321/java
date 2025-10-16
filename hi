@@ -1,4 +1,56 @@
-.battery-widget {
+html:
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pasek stanu użytkowników</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  
+<div class="bar-widget">
+  <div class="bar-header">
+    <span class="bar-icon">👥</span>
+    <span class="bar-label">Dostępność użytkowników</span>
+  </div>
+
+  <div class="bar-body">
+    <div class="bar-progress">
+      <div class="bar-fill" id="barFill"></div>
+    </div>
+    <div class="bar-percent" id="barPercent">90%</div>
+  </div>
+</div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+
+js:
+const fill = document.getElementById("batteryFill");
+const percentText = document.getElementById("batteryPercent");
+
+/**
+ * Funkcja aktualizująca pasek
+ * @param {number} value - poziom procentowy użytkowników (0–100)
+ */
+function updateBar(value) {
+  const all = 1560
+  const percent = (value/all * 100).trim(2); // ograniczenie do zakresu
+  fill.style.width = percent + "%";
+  percentText.textContent = percent + "%";
+}
+
+// przykład dynamicznej zmiany co 2 sekundy (można usunąć)
+let demo = 800;
+setInterval(() => {
+  demo = (demo + 10) % 110;
+  updateBar(demo);
+}, 1500);
+
+.bar-widget {
   width: 220px;
   background: #fff; /* białe tło */
   border-radius: 16px;
@@ -13,30 +65,30 @@
 }
 
 /* linia 1: ikona + nazwa */
-.battery-header {
+.bar-header {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.battery-icon {
+.bar-icon {
   font-size: 18px;
 }
 
-.battery-label {
+.bar-label {
   font-size: 14px;
   font-weight: 500;
 }
 
 /* linia 2: pasek + procent */
-.battery-body {
+.bar-body {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
 /* stała długość paska */
-.battery-progress {
+.bar-progress {
   width: 150px; /* << długość paska zawsze taka sama */
   height: 10px;
   background: #ddd;
@@ -46,7 +98,7 @@
 }
 
 /* wypełnienie paska */
-.battery-fill {
+.bar-fill {
   height: 100%;
   width: 0%;
   background: #4cd964; /* zielony iOS */
@@ -55,37 +107,10 @@
 }
 
 /* procent po prawej stronie */
-.battery-percent {
+.bar-percent {
   font-size: 14px;
   font-weight: 600;
   width: 40px; /* stała szerokość dla równego ułożenia */
   text-align: right;
 }
 
-
-<div class="battery-widget">
-  <div class="battery-header">
-    <span class="battery-icon">📱</span>
-    <span class="battery-label">This phone</span>
-  </div>
-
-  <div class="battery-body">
-    <div class="battery-progress">
-      <div class="battery-fill" id="batteryFill"></div>
-    </div>
-    <div class="battery-percent" id="batteryPercent">90%</div>
-  </div>
-</div>
-
-
-const fill = document.getElementById("batteryFill");
-const percentText = document.getElementById("batteryPercent");
-
-function updateBar(value) {
-  const percent = Math.min(Math.max(value, 0), 100);
-  fill.style.width = percent + "%";
-  percentText.textContent = percent + "%";
-}
-
-// przykład użycia
-updateBar(90);
