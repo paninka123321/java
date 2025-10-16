@@ -1,3 +1,4 @@
+
 js:
 const canvas = document.getElementById("gaugeCanvas");
 const ctx = canvas.getContext("2d");
@@ -46,35 +47,35 @@ function drawGauge() {
 
   ctx.beginPath();
   ctx.arc(centerX, centerY, radius, startAngle, valueAngle);
-  // OPCJA DLA GRADIENTU
-  // ctx.strokeStyle = gradient;
+  //OPCJA DLA GRADIENTU
+  ctx.strokeStyle = gradient;
 
   ctx.lineWidth = 12;
   ctx.stroke();
   // OPCJA DLA CAŁEJ LINI KOLORU:
     // Kolory segmentów
-  let colors = ["red","yellow","green"];
-  if (colorDirection === "green-red") colors = colors.reverse();
+  //let colors = ["red","yellow","green"];
+ // if (colorDirection === "green-red") colors = colors.reverse();
 
-  let prev = 0;
-  for (let i = 0; i < thresholds.length; i++) {
-    const segEnd = thresholds[i];
-    if (fraction <= prev) break; // jeśli wartość jest mniejsza niż początek segmentu, kończymy
+  // let prev = 0;
+  // for (let i = 0; i < thresholds.length; i++) {
+  //   const segEnd = thresholds[i];
+  //   if (fraction <= prev) break; // jeśli wartość jest mniejsza niż początek segmentu, kończymy
 
-    ctx.beginPath();
-    ctx.arc(
-      centerX,
-      centerY,
-      radius,
-      startAngle + prev * Math.PI,
-      startAngle + Math.min(fraction, segEnd) * Math.PI
-    );
-    ctx.strokeStyle = colors[i];
-    ctx.lineWidth = 12;
-    ctx.stroke();
+  //   ctx.beginPath();
+  //   ctx.arc(
+  //     centerX,
+  //     centerY,
+  //     radius,
+  //     startAngle + prev * Math.PI,
+  //     startAngle + Math.min(fraction, segEnd) * Math.PI
+  //   );
+  //   ctx.strokeStyle = colors[i];
+  //   ctx.lineWidth = 12;
+  //   ctx.stroke();
 
-    prev = segEnd;
-  }
+  //   prev = segEnd;
+  // }
 // koniec opcji 
   // Jak wyswietlac tekst w zaleznosci czy procenty czy liczby 
   // dodatkowo opcja tofixed pozwala nam zdefiniować do ilu miejsc 
@@ -121,8 +122,7 @@ applyBtn.addEventListener("click", () =>
 
     panel.classList.add("hidden");
 
-    // zapisywanie ustawień w użytkownika w localStorage, żeby zawsze miał swój ulubiony widok
-    localStorage.setItem("gaugeSettings", JSON.stringify(settings));
+    
 });
 
 // odczytywanie ustawień localStorage przy stacie 
@@ -133,8 +133,7 @@ window.addEventListener("load", () => {
         drawGauge();
     }
 })
-
-index:
+html:
 <!DOCTYPE html>
 <html lang="pl">
     <!-- settings -->
