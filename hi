@@ -1,116 +1,106 @@
-html:
 <!DOCTYPE html>
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pasek stanu użytkowników</title>
+  <title>Pasek baterii</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  
-<div class="bar-widget">
-  <div class="bar-header">
-    <span class="bar-icon">👥</span>
-    <span class="bar-label">Dostępność użytkowników</span>
-  </div>
-
-  <div class="bar-body">
-    <div class="bar-progress">
-      <div class="bar-fill" id="barFill"></div>
+  <!-- pojedynczy poziomy pasek baterii -->
+  <div class="battery-bar">
+    <div class="battery-info">
+      <span class="battery-icon">📱</span>
+      <span class="battery-label">This phone</span>
     </div>
-    <div class="bar-percent" id="barPercent">90%</div>
+
+    <div class="battery-progress">
+      <div class="battery-fill" id="batteryFill"></div>
+    </div>
+
+    <div class="battery-percent" id="batteryPercent">90%</div>
   </div>
-</div>
 
   <script src="script.js"></script>
 </body>
 </html>
 
-js:
+/* wygląd całego paska */
+.battery-bar {
+  width: 250px;
+  background: #fff; /* białe tło */
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: sans-serif;
+  color: #000; /* czarny tekst i ikonka */
+}
+
+/* sekcja z ikoną i nazwą */
+.battery-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.battery-icon {
+  font-size: 18px;
+}
+
+.battery-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* kontener paska postępu */
+.battery-progress {
+  flex-grow: 1;
+  height: 10px;
+  background: #ddd;
+  border-radius: 6px;
+  margin: 0 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* kolorowy pasek */
+.battery-fill {
+  height: 100%;
+  width: 0%;
+  background: #4cd964; /* zielony kolor jak w iOS */
+  border-radius: 6px;
+  transition: width 0.4s ease-in-out; /* płynna animacja */
+}
+
+/* procent po prawej stronie */
+.battery-percent {
+  font-size: 14px;
+  font-weight: 600;
+}
+
 const fill = document.getElementById("batteryFill");
 const percentText = document.getElementById("batteryPercent");
 
 /**
  * Funkcja aktualizująca pasek
- * @param {number} value - poziom procentowy użytkowników (0–100)
+ * @param {number} value - poziom procentowy baterii (0–100)
  */
 function updateBar(value) {
-  const all = 1560
-  const percent = (value/all * 100).trim(2); // ograniczenie do zakresu
+  const percent = Math.min(Math.max(value, 0), 100); // ograniczenie do zakresu
   fill.style.width = percent + "%";
   percentText.textContent = percent + "%";
 }
 
 // przykład dynamicznej zmiany co 2 sekundy (można usunąć)
-let demo = 800;
+let demo = 90;
 setInterval(() => {
   demo = (demo + 10) % 110;
   updateBar(demo);
-}, 1500);
+}, 2000);
 
-.bar-widget {
-  width: 220px;
-  background: #fff; /* białe tło */
-  border-radius: 16px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  padding: 10px 14px;
-  font-family: sans-serif;
-  color: #000;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-}
-
-/* linia 1: ikona + nazwa */
-.bar-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.bar-icon {
-  font-size: 18px;
-}
-
-.bar-label {
-  font-size: 14px;
-  font-weight: 500;
-}
-
-/* linia 2: pasek + procent */
-.bar-body {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-/* stała długość paska */
-.bar-progress {
-  width: 150px; /* << długość paska zawsze taka sama */
-  height: 10px;
-  background: #ddd;
-  border-radius: 6px;
-  overflow: hidden;
-  position: relative;
-}
-
-/* wypełnienie paska */
-.bar-fill {
-  height: 100%;
-  width: 0%;
-  background: #4cd964; /* zielony iOS */
-  border-radius: 6px;
-  transition: width 0.4s ease-in-out;
-}
-
-/* procent po prawej stronie */
-.bar-percent {
-  font-size: 14px;
-  font-weight: 600;
-  width: 40px; /* stała szerokość dla równego ułożenia */
-  text-align: right;
-}
-
+// początkowe ustawienie
+updateBar(90);
