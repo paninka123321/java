@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Półokrągły Gauge</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --track:#e9e9ea;
+    --accent:#ff3b18; /* kolor wartości */
+    --label:#777777;
+  }
+  html,body{height:100%;margin:0;background:var(--bg);font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+  .wrap{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .gauge {
+    width:420px;
+    max-width:92vw;
+    aspect-ratio: 1.6 / 1; /* półokrąg proporcja */
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+  }
+
+  svg{ width:100%; height:100%; display:block; }
+
+  /* central value */
+  .center {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-28%);
+    text-align:center;
+    pointer-events:none;
+  }
+  .value {
+    font-size:64px;
+    line-height:1;
+    font-weight:700;
+    color:var(--accent);
+    letter-spacing: -1px;
+  }
+  .unit {
+    display:block;
+    margin-top:4px;
+    font-size:14px;
+    color:var(--label);
+    font-weight:600;
+  }
+  .title {
+    position:absolute;
+    top:62%;
+    left:50%;
+    transform:translateX(-50%);
+    font-size:14px;
+    color:var(--label);
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    font-weight:600;
+  }
+
+  /* small numeric labels on arc */
+  .tick-label {
+    font-size:13px;
+    fill:var(--label);
+    font-weight:600;
+  }
+
+  /* animate stroke-dashoffset smoothly */
+  .value-arc {
+    transition: stroke-dashoffset 900ms cubic-bezier(.2,.9,.3,1),
+                stroke 400ms linear;
+  }
+
+  /* make ends rounded */
+  .arc, .value-arc { stroke-linecap: round; }
+
+  /* small gap decoration (simulate short breaks at ticks) */
+  .gap-seg { stroke-linecap:butt; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="gauge" role="img" aria-label="Gauge">
+    <svg viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet" id="gaugeSvg" aria-hidden="false">
+      <!-- center coordinates cx=400 cy=420, radius ~300 gives nice semi circle -->
+      <!-- background track (broken into segments to create small gaps at ticks) -->
+      <g transform="translate(0,0)">
+        <!-- draw 5 segments with tiny gaps to simulate markers -->
+        <!-- segments angles in radians: from pi (180deg) to 0 (0deg) -->
+        <!-- We'll create segments between tickPositions -->
+        <!-- Background segments: light track -->
+        <path id="bg1" class="arc gap-seg" d="" fill="none" stroke="var(--track)" stroke-width="36"></path>
+        <path id="bg2" class="arc gap-seg" d="" fill="none" stroke="var(--track)" stroke-width="36"></path>
+        <path id="bg3" class="arc gap-seg" d="" fill="none" stroke="var(--track)" stroke-width="36"></path>
+        <path id="bg4" class="arc gap-seg" d="" fill="none" stroke="var(--track)" stroke-width="36"></path>
+        <path id="bg5" class="arc gap-seg" d="" fill="none" stroke="var(--track)" stroke-width="36"></path>
+
+        <!-- foreground value arc (single continuous arc, mask by dashoffset to show only up to value) -->
+        <path id="valArc" class="value-arc" d="" fill="none" stroke="var(--accent)" stroke-width="36"></path>
+
+        <!-- small tick markers (short radial strokes) -->
+        <g id="ticks"></g>
+
+        <!-- numeric tick labels (10,20,30,40) -->
+        <text id="lbl10" class="tick-label" x="0" y="0" text-anchor="middle">10</text>
+        <text id="lbl20" class="tick-label" x="0" y="0" text-anchor="middle">20</text>
+        <text id="lbl30" class="tick-label" x="0" y="0" text-anchor="middle">30</text>
+        <text id="lbl40" class="tick-label" x="0" y="0" text-anchor="middle">40</text>
+      </g>
+    </svg>
+
+    <div class="center" id="centerText">
+      <div class="value" id="gaugeValue">14</div>
+      <div class="unit" id="gaugeUnit">UV</div>
+    </div>
+
+    <div class="title" id="gaugeTitle">UV</div>
+  </div>
+</div>
+
+<script>
+/*
+  Półokrąg gauge w SVG.
+  - min..max, value
+  - rysuje tło jako kilka segmentów (małe przerwy przy tickach)
+  - rysuje kolorowy łuk od min do value
+  - umieszcza etykiety 10,20,30,40
+  - centralna liczba + tytuł pod nią
+*/
+
+(function(){
+  const svg = document.getElementById('gaugeSvg');
+  // geometry (w jednostkach viewBox)
+  const cx = 400;
+  const cy = 420;
+  const r = 320; // radius for arc center
+  const stroke = 36; // arc thickness
+
+  // model
+  const cfg = {
+    min: 0,
+    max: 40,
+    value: 14,   // start value
+    unit: 'UV',
+    title: 'UV',
+    // tick values (for labels and segment breaks) - must be within [min,max]
+    ticks: [10, 20, 30, 40]
+  };
+
+  // helpers: polar to cartesian in viewBox coords
+  function polar(angleRad, radius) {
+    return {
+      x: cx + Math.cos(angleRad) * radius,
+      y: cy + Math.sin(angleRad) * radius
+    };
+  }
+
+  // map value to angle between pi (left) and 0 (right)
+  function valueToAngle(v) {
+    const t = (v - cfg.min) / (cfg.max - cfg.min);
+    return Math.PI + (1 - t) * Math.PI; // map 0->pi, 1->0
+    // alternative simpler: start + (1-t)*pi
+  }
+
+  // build arc path for startAngle..endAngle (in radians)
+  function arcPath(startA, endA, radius) {
+    // use large-arc-flag = 0 since always <= 180deg per segment
+    const start = polar(startA, radius);
+    const end = polar(endA, radius);
+    const largeArc = (endA - startA) <= Math.PI ? 0 : 1;
+    return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 0 ${end.x} ${end.y}`;
+  }
+
+  // prepare background segments between ticks (create small gaps at tick angles)
+  const bgIds = ['bg1','bg2','bg3','bg4','bg5'].map(id=>document.getElementById(id));
+  // compute break angles: include min and ticks normalized to angle positions and final max
+  const allTicks = [cfg.min, ...cfg.ticks].filter((v,i,arr)=> v>=cfg.min && v<=cfg.max);
+  // ensure final max included
+  if (allTicks[allTicks.length-1] !== cfg.max) allTicks.push(cfg.max);
+
+  const angles = allTicks.map(v=>valueToAngle(v));
+  // create segments: between angles[i] and angles[i+1] minus tiny gap
+  const gap = 0.06; // radians of gap at each tick (adjust)
+  const segs = [];
+  for (let i=0;i<angles.length-1;i++){
+    const a = angles[i] + gap;
+    const b = angles[i+1] - gap;
+    // clamp
+    if (b > a) segs.push([a,b]);
+  }
+  // fill bg paths (use up to available bgIds)
+  for (let i=0;i<bgIds.length;i++){
+    if (segs[i]) bgIds[i].setAttribute('d', arcPath(segs[i][0], segs[i][1], r));
+    else bgIds[i].setAttribute('d',''); // empty
+  }
+
+  // full arc path (background full, used to compute length for value arc)
+  const fullPathD = arcPath(Math.PI, 0, r);
+  const valArc = document.getElementById('valArc');
+  valArc.setAttribute('d', fullPathD);
+  valArc.setAttribute('stroke-linecap','round');
+
+  // compute path length and set dasharray so we can animate by dashoffset
+  // create temporary path to measure length
+  const tmp = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  tmp.setAttribute('d', fullPathD);
+  tmp.setAttribute('fill','none');
+  tmp.setAttribute('stroke','transparent');
+  svg.appendChild(tmp);
+  const totalLen = tmp.getTotalLength();
+  svg.removeChild(tmp);
+
+  // we want the visible part from left->right for fraction. stroke-dasharray trick:
+  // set dasharray = totalLen and dashoffset = totalLen * (1 - faction)
+  valArc.setAttribute('stroke-dasharray', totalLen);
+  valArc.setAttribute('stroke-dashoffset', totalLen); // initially zero visible
+
+  // place tick markers (small radial strokes) and labels
+  const ticksGroup = document.getElementById('ticks');
+  ticksGroup.innerHTML = '';
+  cfg.ticks.forEach(tickVal=>{
+    if (tickVal < cfg.min || tickVal > cfg.max) return;
+    const a = valueToAngle(tickVal);
+    // inner and outer points for small tick
+    const p1 = polar(a, r - stroke/2 - 4);
+    const p2 = polar(a, r + stroke/2 + 4);
+    const line = document.createElementNS("http://www.w3.org/2000/svg",'line');
+    line.setAttribute('x1', p1.x); line.setAttribute('y1', p1.y);
+    line.setAttribute('x2', p2.x); line.setAttribute('y2', p2.y);
+    line.setAttribute('stroke', '#e9e9ea');
+    line.setAttribute('stroke-width','6');
+    line.setAttribute('stroke-linecap','butt');
+    ticksGroup.appendChild(line);
+
+    // label slightly outward and rotated none
+    const lbl = document.getElementById('lbl'+tickVal/10*10);
+    // compute label pos
+    const lp = polar(a, r + stroke/2 + 30);
+    if (lbl) {
+      lbl.setAttribute('x', lp.x);
+      lbl.setAttribute('y', lp.y);
+    } else {
+      const t = document.createElementNS("http://www.w3.org/2000/svg",'text');
+      t.setAttribute('x', lp.x);
+      t.setAttribute('y', lp.y);
+      t.setAttribute('text-anchor','middle');
+      t.setAttribute('class','tick-label');
+      t.textContent = tickVal;
+      svg.appendChild(t);
+    }
+  });
+
+  // update center text and title
+  const valEl = document.getElementById('gaugeValue');
+  const unitEl = document.getElementById('gaugeUnit');
+  const titleEl = document.getElementById('gaugeTitle');
+  unitEl.textContent = cfg.unit;
+  titleEl.textContent = cfg.title;
+
+  // function to set value (animates)
+  function setValue(v, animate=true){
+    const clamped = Math.max(cfg.min, Math.min(cfg.max, v));
+    cfg.value = clamped;
+    // compute fraction 0..1 relative to min..max
+    const frac = (clamped - cfg.min) / (cfg.max - cfg.min);
+    // we want dashoffset so that visible length = frac * totalLen
+    const visibleLen = frac * totalLen;
+    const dashOffset = totalLen - visibleLen;
+    if (!animate) {
+      valArc.style.transition = 'none';
+      valArc.setAttribute('stroke-dashoffset', dashOffset);
+      // force reflow then restore
+      void valArc.getBoundingClientRect();
+      valArc.style.transition = '';
+    } else {
+      valArc.setAttribute('stroke-dashoffset', dashOffset);
+    }
+    // numeric update
+    valEl.textContent = Math.round(clamped);
+  }
+
+  // initial draw
+  // set initial stroke colors etc.
+  valArc.setAttribute('stroke', getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+  valArc.setAttribute('stroke-width', stroke);
+  // set background segments stroke width
+  bgIds.forEach(p=>p.setAttribute('stroke-width', stroke));
+
+  // set initial value
+  setValue(cfg.value, false);
+
+  // simple demo: animate value changes every 2s (remove for production)
+  setInterval(()=>{
+    // example random change around current
+    const delta = (Math.random()-0.5)*8;
+    let newV = Math.round((cfg.value + delta));
+    if (newV < cfg.min) newV = cfg.min;
+    if (newV > cfg.max) newV = cfg.max;
+    setValue(newV, true);
+  }, 2400);
+
+  // expose setter to global for console testing
+  window.setGaugeValue = (v)=> setValue(v,true);
+
+})();
+</script>
+</body>
+</html>
