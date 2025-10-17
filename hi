@@ -1,305 +1,371 @@
-
 <!DOCTYPE html>
 <html lang="pl">
-    <!-- settings -->
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gauge</title>
-    <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gauge Widget</title>
+  <style>
+    :root{
+      --bg:#0b0b0d;
+      --card:#0f1113;
+      --muted:#9aa3ad;
+      --accent-text:#ffb347;
+    }
+
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#050509 0%, #0b0b0d 100%);font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial;}
+    .gauge-widget{
+      width:160px;
+      height:160px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:18px;
+      box-shadow:
+        0 6px 18px rgba(2,6,23,0.6),
+        inset 0 1px 0 rgba(255,255,255,0.02);
+      padding:12px;
+      position:relative;
+      color:#fff;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      overflow:visible;
+    }
+
+    /* header - small icons top-right */
+    .gauge-header {
+      position:absolute;
+      top:8px;
+      right:8px;
+      display:flex;
+      gap:6px;
+      z-index:10;
+    }
+    .icon-btn{
+      width:28px;height:28px;border-radius:8px;border:none;background:rgba(255,255,255,0.03);color:rgba(255,255,255,0.8);
+      display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;
+      transition:all .15s ease;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.02);
+    }
+    .icon-btn:hover{ transform:translateY(-1px); background:rgba(255,255,255,0.04); }
+
+    /* canvas container */
+    .gauge-container{
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+      pointer-events:none;
+    }
+
+    canvas{ display:block; width:120px; height:120px; }
+
+    /* center value */
+    .gauge-value{
+      position:absolute;
+      top:50%;
+      left:50%;
+      transform:translate(-50%,-50%);
+      text-align:center;
+      pointer-events:none;
+      line-height:1;
+    }
+    .gauge-value .value{
+      font-size:28px;
+      font-weight:700;
+      letter-spacing:0.5px;
+      color: #ffd166;
+      text-shadow: 0 6px 18px rgba(255,209,102,0.06), 0 2px 6px rgba(0,0,0,0.7);
+    }
+    .gauge-value .unit{
+      display:block;
+      font-size:11px;
+      color:var(--muted);
+      margin-top:2px;
+      font-weight:600;
+    }
+
+    .gauge-label{
+      position:absolute;
+      bottom:10px;
+      left:50%;
+      transform:translateX(-50%);
+      font-size:11px;
+      color:var(--muted);
+      pointer-events:none;
+      text-transform:uppercase;
+      letter-spacing:0.15em;
+    }
+
+    /* settings panel */
+    .settings-panel{
+      position:absolute;
+      top:40px;
+      right:8px;
+      width:220px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px;
+      padding:10px;
+      box-shadow:0 8px 30px rgba(2,6,23,0.6);
+      color:#ddd;
+      z-index:50;
+      font-size:13px;
+    }
+    .settings-panel.hidden{ display:none; }
+    .settings-panel h3{ margin:0 0 6px 0; font-size:13px; color:#fff; }
+    .settings-row{ margin:8px 0; display:flex;flex-direction:column; gap:6px; }
+    .settings-row label{ font-size:12px; color:var(--muted); }
+    .settings-row select, .settings-row input{
+      background:rgba(255,255,255,0.02);
+      border:1px solid rgba(255,255,255,0.04);
+      color:#ddd;
+      padding:6px 8px;
+      border-radius:8px;
+      outline:none;
+      font-size:13px;
+    }
+    .settings-panel button{
+      margin-top:8px;
+      width:100%;
+      padding:8px;
+      background:linear-gradient(90deg,#ffd166,#ff7b7b);
+      border:none;border-radius:8px;color:#081018;font-weight:700;cursor:pointer;
+    }
+
+    /* small helper for label under value (e.g. UV) */
+    .unit-badge{
+      display:block;
+      font-size:10px;
+      color: #cbd5e1;
+      margin-top:2px;
+      font-weight:600;
+      letter-spacing:.08em;
+    }
+
+    @media (max-width:420px){
+      .gauge-widget{ transform:scale(.95); }
+    }
+  </style>
 </head>
-
-<!-- body of page-->
 <body>
-    <div class="gauge-widget">
-        <div class="gauge-header">
-            <!--<span class="widget-title">Temperatura CPU</span> --><!-- opcjonalnie tutaj tytuł wykresu -->
-            <div class="widget-actions">
-            <button class="icon-btn settings-btn">⚙️</button>
-            <button class="icon-btn expand-btn">⤢</button>
-            </div>
-        </div>
-
-        <div class="gauge-container">
-            <canvas id="gaugeCanvas" width="175" height="100"></canvas>
-            <div class="gauge-value">
-            <span id="gaugeValue">78.53</span><span id="unit">°C</span>
-            </div>
-            <div class="gauge-label">Temperatura CPU</div>
-        </div>
+  <div class="gauge-widget" aria-label="gauge widget">
+    <div class="gauge-header">
+      <button class="icon-btn settings-btn" title="Ustawienia">⚙️</button>
+      <button class="icon-btn expand-btn" title="Rozwiń">⤢</button>
     </div>
 
-<!-- Rozwijany panel uswtawień (przedział, gradient koloró, liczby/procenty)-->
-    <div class="settings-panel hidden" id="settingsPanel">
-        <h3>Ustawienia</h3>
-        <label>
-            - format wywietlania:
-            <select id="displayMode">
-                <option value="number">liczba</option>
-                <option value="percent">procent</option>
-            </select>
-        </label>
-        <br>
-        <label>
-            - kierunek gradientu kolorów
-            <select id="colorDirection">
-                <option value="red-green">czerwony -> zielony</option>
-                <option value="green-red">zielony -> czerwony</option>
-            </select>
-        </label>
-        <br>
-        <label>
-            - progi kolorów (do jakiej części wykresu ma iść kolor, 0ddziel przecinkami)
-            <input id="thresholdsInput" type="text" placeholder="np. 0.25, 0.75"></input>
-        </label>
-        <br>
-        <button id="applySettings">Zastosuj zmiany</button>
-    </div> 
-    <script src="script.js"></script>
+    <div class="gauge-container">
+      <canvas id="gaugeCanvas" width="240" height="240" aria-hidden="true"></canvas>
+      <div class="gauge-value" aria-live="polite">
+        <div class="value" id="gaugeValue">78.5</div>
+        <div class="unit" id="unitLabel">°C</div>
+      </div>
+      <div class="gauge-label" id="gaugeLabel">Temperatura CPU</div>
+    </div>
+
+    <div class="settings-panel hidden" id="settingsPanel" role="dialog" aria-hidden="true">
+      <h3>Ustawienia</h3>
+      <div class="settings-row">
+        <label for="displayMode">Format wyświetlania</label>
+        <select id="displayMode">
+          <option value="number">liczba</option>
+          <option value="percent">procent</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <label for="colorDirection">Kierunek gradientu</label>
+        <select id="colorDirection">
+          <option value="red-green">czerwony → zielony</option>
+          <option value="green-red">zielony → czerwony</option>
+        </select>
+      </div>
+      <div class="settings-row">
+        <label for="thresholdsInput">Progi kolorów (0-1, oddziel przecinkami)</label>
+        <input id="thresholdsInput" type="text" placeholder="np. 0.25,0.6"/>
+      </div>
+      <button id="applySettings">Zastosuj</button>
+    </div>
+  </div>
+
+  <script>
+    // elementy
+    const canvas = document.getElementById('gaugeCanvas');
+    const ctx = canvas.getContext('2d', { alpha: true });
+    const valueEl = document.getElementById('gaugeValue');
+    const unitEl = document.getElementById('unitLabel');
+    const labelEl = document.getElementById('gaugeLabel');
+
+    // settings (zachowane komentarze i logika)
+    let settings = {
+      mode: 'number', // "percent"
+      min: 0,
+      max: 100,
+      value: 78.53,
+      unit: '°C',
+      colorDirection: 'red-green', // "green-red"
+      thresholds: [0.25, 0.5, 0.75] // punkty zmiany koloru 0..1
+    };
+
+    // skalowanie canvasa do DPR (wyraźny rendering)
+    function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+
+    // rysowanie widgetu
+    function drawGauge() {
+      resizeCanvas();
+      const w = canvas.width / (window.devicePixelRatio || 1);
+      const h = canvas.height / (window.devicePixelRatio || 1);
+      const cx = w / 2;
+      const cy = h / 2;
+      const radius = Math.min(w, h) * 0.38;
+      const thickness = Math.max(8, Math.round(radius * 0.17));
+
+      // czyść
+      ctx.clearRect(0,0,w,h);
+
+      // tło półpierścienia (nieosiągnięte)
+      const start = Math.PI; // początek półokręgu (lewy)
+      const end = 2 * Math.PI; // prawy
+      ctx.lineCap = 'round';
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, start, end, false);
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = thickness;
+      ctx.stroke();
+
+      // oblicz frakcję i kąt celu
+      const { min, max, value } = settings;
+      const fraction = Math.min(Math.max((value - min) / (max - min), 0), 1);
+      const valueAngle = start + fraction * Math.PI;
+
+      // przygotuj kolory wg progów (zachowanie logiki progów)
+      const stops = (settings.thresholds && settings.thresholds.length) ? settings.thresholds.slice() : [0.25,0.5,0.75];
+      // kolory bazowe
+      const colorSet = settings.colorDirection === 'red-green'
+        ? ['#ff3b30','#ff9500','#ffd166','#34c759']
+        : ['#34c759','#ffd166','#ff9500','#ff3b30'];
+
+      // użyj createConicGradient dla płynnego efektu
+      // createConicGradient expects angle in radians measured from positive x.
+      // we want gradient starting at left (Math.PI)
+      const grad = ctx.createConicGradient(start, cx, cy);
+      // ensure stops are sorted and normalized
+      stops.sort((a,b)=>a-b);
+      // map stops to color positions along the half-circle [0..1] -> angle fraction of full circle
+      // Because conic gradient covers full circle, we'll map 0..1 to start..end angle. To place colors properly,
+      // add some small offsets to cover full ring appearance.
+      // add initial color at 0
+      grad.addColorStop(0, colorSet[0]);
+      for (let i=0;i<stops.length;i++){
+        const pos = Math.min(Math.max(stops[i],0),1);
+        // position on conic gradient normalized to [0..1] of full circle, but we'll map half circle by pos*0.5 + 0
+        grad.addColorStop(pos*0.5, colorSet[Math.min(i+1, colorSet.length-1)]);
+      }
+      grad.addColorStop(1, colorSet[colorSet.length-1]);
+
+      // rysowanie kolorowego łuku do aktualnej wartości
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, start, valueAngle, false);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = thickness;
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = 'rgba(255,150,80,0.18)';
+      ctx.stroke();
+
+      // delikatna zewnętrzna poświata dla efektu "neon"
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius + (thickness*0.35), start, valueAngle, false);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,200,120,0.06)';
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = 'rgba(255,190,80,0.08)';
+      ctx.stroke();
+
+      // wyświetl tekst zgodnie z trybem
+      const displayValue = settings.mode === 'percent'
+        ? ((settings.value / settings.max) * 100).toFixed(1) + '%'
+        : settings.value.toFixed(1);
+      valueEl.textContent = displayValue;
+      unitEl.textContent = settings.unit || '';
+      // accessibility
+      canvas.setAttribute('role','img');
+      canvas.setAttribute('aria-label', `Wartość: ${displayValue} ${settings.unit || ''}`);
+
+      // reset shadow
+      ctx.shadowBlur = 0;
+    }
+
+    // ustawienia panelu
+    const settingsBtn = document.querySelector('.settings-btn');
+    const panel = document.getElementById('settingsPanel');
+    const applyBtn = document.getElementById('applySettings');
+
+    settingsBtn.addEventListener('click', () => {
+      // wprowadź wartości do pól
+      document.getElementById('displayMode').value = settings.mode;
+      document.getElementById('colorDirection').value = settings.colorDirection;
+      document.getElementById('thresholdsInput').value = settings.thresholds.join(',');
+      panel.classList.toggle('hidden');
+      panel.setAttribute('aria-hidden', panel.classList.contains('hidden') ? 'true' : 'false');
+    });
+
+    applyBtn.addEventListener('click', () => {
+      const mode = document.getElementById('displayMode').value;
+      const colorDirection = document.getElementById('colorDirection').value;
+      const thresholdsInput = document.getElementById('thresholdsInput').value;
+      const thresholds = thresholdsInput
+        .split(',')
+        .map(v => parseFloat(v.trim()))
+        .filter(v => !isNaN(v))
+        .map(v => Math.min(Math.max(v,0),1)); // clamp 0..1
+
+      settings.mode = mode;
+      settings.colorDirection = colorDirection;
+      if (thresholds.length) settings.thresholds = thresholds;
+
+      // zapisz
+      try { localStorage.setItem('gaugeSettings', JSON.stringify(settings)); } catch(e){}
+      drawGauge();
+      panel.classList.add('hidden');
+      panel.setAttribute('aria-hidden','true');
+    });
+
+    // załaduj zapisane ustawienia
+    window.addEventListener('load', () => {
+      try {
+        const saved = localStorage.getItem('gaugeSettings');
+        if (saved) settings = Object.assign(settings, JSON.parse(saved));
+      } catch(e){}
+      // ustaw widok canvasa w CSS pixels
+      // dopasowanie rozmiaru elementu canvas (style width/height) - użyj wartości CSS aby canvas renderował poprawnie
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0) {
+        // jeśli canvas ma 0 wymiarów (np. przy bezpośrednim użyciu pliku), ustaw domyślne style
+        canvas.style.width = '120px';
+        canvas.style.height = '120px';
+      }
+      drawGauge();
+    });
+
+    // OBSŁUGA DYNAMICZNYCH ZMIAN (np. symulacja wartości)
+    // przykładowa animacja zmieniająca wartość co 2s (usuń lub zastąp rzeczywistymi danymi)
+    setInterval(() => {
+      // symulacja drobnych zmian
+      const jitter = (Math.random()-0.5) * 4;
+      settings.value = Math.min(Math.max(settings.value + jitter, settings.min), settings.max);
+      drawGauge();
+    }, 2000);
+
+    // resize observer aby rysować przy zmianie rozmiaru kontenera
+    const ro = new ResizeObserver(() => drawGauge());
+    ro.observe(canvas);
+  </script>
 </body>
 </html>
-
-js:
-const canvas = document.getElementById("gaugeCanvas");
-const ctx = canvas.getContext("2d");
-
-// example values
-let settings = {
-  mode: "number", // "percent"
-  min: 0,
-  max: 100,
-  value: 78.53,
-  colorDirection: "red-green", // "green-red"
-  thresholds: [0.25, 0.50, 0.75], // punkty zmiany koloru 
-};
-
-function drawGauge() {
-  const { min, max, value, colorDirection, thresholds } = settings;
-  const startAngle = Math.PI;  // półkole - miara w radianach
-  const endAngle = 2 * Math.PI;
-  const radius = 80;
-  const centerX = canvas.width / 2;
-  const centerY = canvas.height;
-
-  // Tło (nieosiągnięte)
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, radius, startAngle, endAngle);
-  ctx.strokeStyle = "#ddd";
-  ctx.lineWidth = 12;
-  ctx.stroke();
-
-  // Wartość aktualna
-  const fraction = Math.min(Math.max((value - min) / (max - min), 0), 1); // FIX: ograniczamy od 0 do 1
-  const valueAngle = startAngle + fraction * Math.PI; // po lewo jest pi po prawo wartosc max to 2 pi
-
-  // ustawienia skali kolorów
-  // FIX: użycie createConicGradient zamiast createLinearGradient
-  const gradient = ctx.createConicGradient(startAngle, centerX, centerY);
-  if (colorDirection === "red-green") {
-    gradient.addColorStop(thresholds[0], "red");
-    gradient.addColorStop(thresholds[1], "orange");
-    gradient.addColorStop(thresholds[2], "green");
-  } else {
-    gradient.addColorStop(thresholds[0], "green");
-    gradient.addColorStop(thresholds[1], "orange");
-    gradient.addColorStop(thresholds[2], "red");
-  }
-
-  // FIX: rysowanie wartości (półkole)
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, radius, startAngle, valueAngle);
-  ctx.strokeStyle = gradient;
-  ctx.lineWidth = 12;
-  ctx.stroke();
-
-  // OPCJA DLA CAŁEJ LINI KOLORU:
-  //let colors = ["red","yellow","green"];
-  //if (colorDirection === "green-red") colors = colors.reverse();
-
-  //let prev = 0;
-  //for (let i = 0; i < thresholds.length; i++) {
-  //  const segEnd = thresholds[i];
-  //  if (fraction <= prev) break; // jeśli wartość jest mniejsza niż początek segmentu, kończymy
-
-  //  ctx.beginPath();
-  //  ctx.arc(
-  //    centerX,
-  //    centerY,
-  //    radius,
-  //    startAngle + prev * Math.PI,
-  //    startAngle + Math.min(fraction, segEnd) * Math.PI
-  //  );
-  //  ctx.strokeStyle = colors[i];
-  //  ctx.lineWidth = 12;
-  //  ctx.stroke();
-
-  //  prev = segEnd;
-  //}
-
-  // koniec opcji 
-  // Jak wyswietlac tekst w zaleznosci czy procenty czy liczby 
-  // dodatkowo opcja tofixed pozwala nam zdefiniować do ilu miejsc 
-  // po przecinku zaookraglamy wartość - mateamtyczne zaokrąglenie
-  const displayValue = settings.mode === "percent"
-    ? ((value / max) * 100).toFixed(1) + "%"
-    : value.toFixed(1);
-  document.getElementById("gaugeValue").textContent = displayValue; 
-}
-
-// PANEL USTAWIŃ
-const settingsBtn = document.querySelector(".settings-btn"); // czyli przycisk ustawień
-const panel = document.getElementById("settingsPanel");
-const applyBtn = document.getElementById("applySettings"); //przycisk zastosowywania zmian
-
-//akcja - pokaż/ukryj panel
-settingsBtn.addEventListener("click", () => {
-  // uzupelnij pola wartościami domyślnymi 
-  document.getElementById("displayMode").value = settings.mode;
-  document.getElementById("colorDirection").value = settings.colorDirection;
-  document.getElementById("thresholdsInput").value = settings.thresholds.join(",");
-  // akcja - pokaż/ukryj
-  panel.classList.toggle("hidden");
-});
-
-//akcja - zastosowanie zmian
-applyBtn.addEventListener("click", () => {
-  const mode = document.getElementById("displayMode").value; //procenty czy liczby
-  const colorDirection = document.getElementById("colorDirection").value;
-  const thresholdsInput = document.getElementById("thresholdsInput").value; //co ile zmieniają się kolory
-
-  const thresholds = thresholdsInput
-    .split(",")
-    .map(v => parseFloat(v.trim()))
-    .filter(v => !isNaN(v));
-
-  settings.mode = mode;
-  settings.colorDirection = colorDirection;
-  if (thresholds.length > 0) settings.thresholds = thresholds;
-
-  // rysowanie koła
-  drawGauge();
-
-  panel.classList.add("hidden");
-});
-
-// odczytywanie ustawień localStorage przy stacie 
-window.addEventListener("load", () => {
-  const saved = localStorage.getItem("gaugeSettings");
-  if (saved) {
-    settings = JSON.parse(saved);
-  }
-  drawGauge(); 
-});
-
-css:
-.gauge-widget {
-  width: 120px; /* kompaktowy rozmiar jak widget baterii */
-  height: 120px;
-  background: #fff; /* białe tło */
-  border-radius: 16px; /* zaokrąglone narożniki */
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* subtelny cień */
-  padding: 10px;
-  font-family: sans-serif;
-  position: relative;
-  color: #000; /* ciemny tekst */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-/* nagłówek widgetu */
-.gauge-header {
-  display: flex;
-  /* justify-content: space-between;*/
-  align-items: center;
-  width: 100%;
-}
-
-.icon-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  padding: 2px;
-  color: #222; /* ciemna ikona */
-
-}
-
-.gauge-container {
-  position: relative;
-  text-align: center;
-  margin-top: 3px;
-}
-
-/* wartość w środku wykresu */
-.gauge-value {
-  font-size: 18px;
-  font-weight: 600;
-  color: #222; /* ciemny tekst */
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* opis pod wykresem */
-.gauge-label {
-  font-size: 14px;
-  color: #666;
-  margin-top: 18px;
-  margin-bottom: 4px;
-}
-
-/* panel ustawień */
-/* jak ma wyglądać panel okregu */
-.settings-panel {
-  position: absolute;
-  top: 40px;
-  right: 10px;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 3px;
-  width: 200px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  font-size: 13px;
-  z-index: 100;
-  color: #000;
-}
-
-.settings-panel.hidden {
-  display: none;
-}
-
-.settings-panel h3 {
-  margin-top: 0;
-  font-size: 14px;
-  color: #000;
-}
-
-
-
-.settings-panel input,
-.settings-panel select {
-  width: 100%;
-  padding: 4px;
-  margin-top: 3px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background-color: #f9f9f9;
-  color: #000;
-  font-size: 13px;
-}
-
-/* efekt hover dla ikon */
-.icon-btn:hover {
-  opacity: 0.7;
-}
-
-/* dopasowanie canvasa do mniejszego rozmiaru */
-#gaugeCanvas {
-  width: 104px;
-  height: 62px;
-}
