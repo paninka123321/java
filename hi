@@ -2,93 +2,55 @@ const canvas = document.getElementById("batteryCanvas");
 const ctx = canvas.getContext("2d");
 const percentText = document.getElementById("batteryPercent");
 
-let batteryValue = 75; // wartość początkowa (w procentach) <- wartość do z czytania z DSL
-const color = "#4cd964"; // zielony kolor paska
+// skalowanie pod urządzenie
+const scale = window.devicePixelRatio || 1;
+canvas.width = 120 * scale;  // dopasuj do swojego rozmiaru
+canvas.height = 120 * scale;
+ctx.scale(scale, scale);
 
-// Funkcja rysująca okrąg procentowy (gauge) 
+let batteryValue = 75;
+const color = "#4cd964";
+
 function drawBatteryGauge(value) {
-  const size = canvas.width;
+  const size = 120; // rozmiar widoczny (bez skalowania)
   const center = size / 2;
   const radius = center - 8;
   const startAngle = 0;
   const endAngle = 2 * Math.PI;
 
+  // czyść całość (uwzględnij skalowanie)
   ctx.clearRect(0, 0, size, size);
 
-  // Samo szare kóło - leżace jako backround dla wyświetlanej potem wartości 
+  // tło
   ctx.beginPath();
   ctx.arc(center, center, radius, startAngle, endAngle);
-  ctx.strokeStyle = "#3a3a3c"; // ciemnoszary pierścień
+  ctx.strokeStyle = "#3a3a3c";
   ctx.lineWidth = 10;
   ctx.stroke();
 
-  // Pasek pokazujący poziom baterii - nałożony już na szare kółko
-  const fraction = Math.min(Math.max(value / 100, 0), 1); // ograniczamy do 0–1 (bo max 100%, ale oczywiście już na produkcje można zmienić)
+  // pasek postępu
+  const fraction = Math.min(Math.max(value / 100, 0), 1);
   const progressAngle = startAngle + fraction * endAngle;
 
   ctx.beginPath();
   ctx.arc(center, center, radius, startAngle, progressAngle);
-  ctx.strokeStyle = color; // kolor paska
+  ctx.strokeStyle = color;
   ctx.lineWidth = 10;
   ctx.lineCap = "round";
   ctx.stroke();
 
-  // Tekst aktualizacji (w środku)
   percentText.textContent = `${Math.round(value)}%`;
 }
 
-
-// Dynamicznej zmiany wartości baterii dla prezentacji
 function updateGauge(newValue) {
   batteryValue = newValue;
   drawBatteryGauge(batteryValue);
 }
 
-// pierwsze rysowanie
 drawBatteryGauge(batteryValue);
 
-// PRZYKŁAD: symulacja zmian
 let demoVal = 75;
 setInterval(() => {
   demoVal = (demoVal + 5) % 101;
   updateGauge(demoVal);
 }, 2000);
-
-.battery-widget {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  background: #fff; /* białe tło */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
-
-/* pozycjonowanie ikonki i tekstu w środku */
-.battery-content {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: black;
-  font-family: sans-serif;
-}
-
-.battery-icon {
-  font-size: 26px;
-  margin-bottom: 4px;
-}
-
-.battery-percent {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-/* styl tła i paska na canvasie */
-canvas {
-  transform: rotate(-90deg); /* obrót żeby start był u góry */
-}
