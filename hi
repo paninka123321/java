@@ -1,358 +1,94 @@
-<!doctype html>
-<html lang="pl">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Gauge Widget — biały motyw</title>
-<style>
-  :root{
-    --bg: #f5f7fa;
-    --card: #ffffff;
-    --muted: #6b7280;
-    --accent: #ff5a2b;
-    --track: #ececec;
-    --shadow: rgba(16,24,40,0.08);
-  }
-  html,body{height:100%;margin:0;background:var(--bg);font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial;}
-  .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+const canvas = document.getElementById("batteryCanvas");
+const ctx = canvas.getContext("2d");
+const percentText = document.getElementById("batteryPercent");
 
-  .gauge-widget{
-    width:180px;
-    height:180px;
-    background: var(--card);
-    border-radius:14px;
-    box-shadow: 0 8px 24px var(--shadow);
-    padding:14px;
-    position:relative;
-    color:#111827;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    flex-direction:column;
-    overflow:visible;
-  }
+let batteryValue = 75; // wartość początkowa (w procentach) <- wartość do z czytania z DSL
+const color = "#4cd964"; // zielony kolor paska
 
-  /* header - small icons top-right */
-  .gauge-header {
-    position:absolute;
-    top:10px;
-    right:10px;
-    display:flex;
-    gap:8px;
-    z-index:10;
-  }
-  .icon-btn{
-    width:30px;height:30px;border-radius:8px;border:none;background:rgba(15,23,42,0.03);color:var(--muted);
-    display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;
-    transition:all .12s ease;
-  }
-  .icon-btn:hover{ transform:translateY(-2px); background:rgba(15,23,42,0.06); }
+// Funkcja rysująca okrąg procentowy (gauge) 
+function drawBatteryGauge(value) {
+  const size = canvas.width;
+  const center = size / 2;
+  const radius = center - 8;
+  const startAngle = 0;
+  const endAngle = 2 * Math.PI;
 
-  /* canvas container */
-  .gauge-container{
-    width:100%;
-    height:100%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    position:relative;
-    pointer-events:none;
-  }
+  ctx.clearRect(0, 0, size, size);
 
-  canvas{ display:block; width:128px; height:128px; }
+  // Samo szare kóło - leżace jako backround dla wyświetlanej potem wartości 
+  ctx.beginPath();
+  ctx.arc(center, center, radius, startAngle, endAngle);
+  ctx.strokeStyle = "#3a3a3c"; // ciemnoszary pierścień
+  ctx.lineWidth = 10;
+  ctx.stroke();
 
-  /* center value */
-  .gauge-value{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    text-align:center;
-    pointer-events:none;
-    line-height:1;
-  }
-  .gauge-value .value{
-    font-size:30px;
-    font-weight:700;
-    color:var(--accent);
-  }
-  .gauge-value .unit{
-    display:block;
-    font-size:11px;
-    color:var(--muted);
-    margin-top:4px;
-    font-weight:600;
-  }
+  // Pasek pokazujący poziom baterii - nałożony już na szare kółko
+  const fraction = Math.min(Math.max(value / 100, 0), 1); // ograniczamy do 0–1 (bo max 100%, ale oczywiście już na produkcje można zmienić)
+  const progressAngle = startAngle + fraction * endAngle;
 
-  .gauge-label{
-    position:absolute;
-    bottom:10px;
-    left:50%;
-    transform:translateX(-50%);
-    font-size:12px;
-    color:var(--muted);
-    pointer-events:none;
-    text-transform:uppercase;
-    letter-spacing:0.12em;
-  }
+  ctx.beginPath();
+  ctx.arc(center, center, radius, startAngle, progressAngle);
+  ctx.strokeStyle = color; // kolor paska
+  ctx.lineWidth = 10;
+  ctx.lineCap = "round";
+  ctx.stroke();
 
-  /* settings panel to the right of widget */
-  .settings-panel{
-    position:absolute;
-    top:10px;
-    left:calc(100% + 12px); /* po prawej stronie widgetu */
-    width:240px;
-    background:var(--card);
-    border-radius:12px;
-    padding:12px;
-    box-shadow:0 12px 30px var(--shadow);
-    color:#111827;
-    z-index:50;
-    font-size:13px;
-    transform: translateX(8px) translateY(0);
-    opacity:0;
-    pointer-events:none;
-    transition: transform .22s ease, opacity .22s ease;
-    border: 1px solid rgba(16,24,40,0.04);
-  }
-  .settings-panel.open{
-    transform: translateX(0);
-    opacity:1;
-    pointer-events:auto;
-  }
-  .settings-panel h3{ margin:0 0 8px 0; font-size:13px; color:#0f172a; font-weight:700; }
-  .settings-row{ margin:8px 0; display:flex;flex-direction:column; gap:6px; }
-  .settings-row label{ font-size:12px; color:var(--muted); }
-  .settings-row select, .settings-row input{
-    background:#fbfdff;
-    border:1px solid rgba(15,23,42,0.06);
-    color:#0f172a;
-    padding:8px 10px;
-    border-radius:8px;
-    outline:none;
-    font-size:13px;
-  }
-  .settings-panel button{
-    margin-top:8px;
-    width:100%;
-    padding:8px;
-    background:linear-gradient(90deg,var(--accent),#ff9a6a);
-    border:none;border-radius:8px;color:white;font-weight:700;cursor:pointer;
-  }
+  // Tekst aktualizacji (w środku)
+  percentText.textContent = `${Math.round(value)}%`;
+}
 
-  /* close area for touch */
-  .settings-panel .close-row{ display:flex; justify-content:flex-end; margin-bottom:6px; }
-  .settings-panel .close-btn{ background:transparent;border:none;color:var(--muted); cursor:pointer; font-size:14px; }
 
-  @media (max-width:520px){
-    .settings-panel{ left: calc(100% + 6px); width:200px; }
-  }
-</style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="gauge-widget" aria-label="gauge widget">
-      <div class="gauge-header">
-        <button class="icon-btn settings-btn" title="Ustawienia">⚙️</button>
-        <button class="icon-btn expand-btn" title="Rozwiń">⤢</button>
-      </div>
+// Dynamicznej zmiany wartości baterii dla prezentacji
+function updateGauge(newValue) {
+  batteryValue = newValue;
+  drawBatteryGauge(batteryValue);
+}
 
-      <div class="gauge-container">
-        <canvas id="gaugeCanvas" width="240" height="240" aria-hidden="true"></canvas>
-        <div class="gauge-value" aria-live="polite">
-          <div class="value" id="gaugeValue">78.5</div>
-          <div class="unit" id="unitLabel">°C</div>
-        </div>
-        <div class="gauge-label" id="gaugeLabel">Temperatura CPU</div>
-      </div>
+// pierwsze rysowanie
+drawBatteryGauge(batteryValue);
 
-      <div class="settings-panel" id="settingsPanel" role="dialog" aria-hidden="true">
-        <div class="close-row">
-          <button class="close-btn" id="closePanel" title="Zamknij">✕</button>
-        </div>
-        <h3>Ustawienia</h3>
-        <div class="settings-row">
-          <label for="displayMode">Format wyświetlania</label>
-          <select id="displayMode">
-            <option value="number">liczba</option>
-            <option value="percent">procent</option>
-          </select>
-        </div>
-        <div class="settings-row">
-          <label for="colorDirection">Kierunek gradientu</label>
-          <select id="colorDirection">
-            <option value="red-green">czerwony → zielony</option>
-            <option value="green-red">zielony → czerwony</option>
-          </select>
-        </div>
-        <div class="settings-row">
-          <label for="thresholdsInput">Progi kolorów (0-1, oddziel przecinkami)</label>
-          <input id="thresholdsInput" type="text" placeholder="np. 0.25,0.6"/>
-        </div>
-        <button id="applySettings">Zastosuj</button>
-      </div>
-    </div>
-  </div>
+// PRZYKŁAD: symulacja zmian
+let demoVal = 75;
+setInterval(() => {
+  demoVal = (demoVal + 5) % 101;
+  updateGauge(demoVal);
+}, 2000);
 
-  <script>
-    const canvas = document.getElementById('gaugeCanvas');
-    const ctx = canvas.getContext('2d', { alpha: true });
-    const valueEl = document.getElementById('gaugeValue');
-    const unitEl = document.getElementById('unitLabel');
+.battery-widget {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  background: #fff; /* białe tło */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
 
-    let settings = {
-      mode: 'number',
-      min: 0,
-      max: 100,
-      value: 78.53,
-      unit: '°C',
-      colorDirection: 'red-green',
-      thresholds: [0.25, 0.5, 0.75]
-    };
+/* pozycjonowanie ikonki i tekstu w środku */
+.battery-content {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: black;
+  font-family: sans-serif;
+}
 
-    function resizeCanvas() {
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = Math.round(rect.width * dpr) || 240;
-      canvas.height = Math.round(rect.height * dpr) || 240;
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-    }
+.battery-icon {
+  font-size: 26px;
+  margin-bottom: 4px;
+}
 
-    function drawGauge() {
-      resizeCanvas();
-      const w = canvas.width / (window.devicePixelRatio || 1);
-      const h = canvas.height / (window.devicePixelRatio || 1);
-      const cx = w / 2;
-      const cy = h / 2;
-      const radius = Math.min(w, h) * 0.4;
-      const thickness = Math.max(8, Math.round(radius * 0.16));
+.battery-percent {
+  font-size: 16px;
+  font-weight: 600;
+}
 
-      ctx.clearRect(0,0,w,h);
-
-      const start = Math.PI;
-      const end = 2 * Math.PI;
-      ctx.lineCap = 'round';
-
-      // background track
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius, start, end, false);
-      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--track').trim() || '#ececec';
-      ctx.lineWidth = thickness;
-      ctx.stroke();
-
-      const { min, max, value } = settings;
-      const fraction = Math.min(Math.max((value - min) / (max - min), 0), 1);
-      const valueAngle = start + fraction * Math.PI;
-
-      const stops = settings.thresholds && settings.thresholds.length ? settings.thresholds.slice() : [0.25,0.5,0.75];
-      const colorSet = settings.colorDirection === 'red-green'
-        ? ['#ff4b2b','#ff8a3d','#ffd18a','#34c759']
-        : ['#34c759','#ffd18a','#ff8a3d','#ff4b2b'];
-
-      // gradient (conic)
-      let grad;
-      try {
-        grad = ctx.createConicGradient(start, cx, cy);
-        grad.addColorStop(0, colorSet[0]);
-        stops.sort((a,b)=>a-b);
-        for (let i=0;i<stops.length;i++){
-          grad.addColorStop(Math.min(Math.max(stops[i],0),1)*0.5, colorSet[Math.min(i+1,colorSet.length-1)]);
-        }
-        grad.addColorStop(1, colorSet[colorSet.length-1]);
-      } catch(e) {
-        // fallback to single color if createConicGradient not supported
-        grad = colorSet[colorSet.length-1];
-      }
-
-      // value arc
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius, start, valueAngle, false);
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = thickness;
-      ctx.shadowBlur = 12;
-      ctx.shadowColor = 'rgba(0,0,0,0.08)';
-      ctx.stroke();
-
-      ctx.shadowBlur = 0;
-
-      const displayValue = settings.mode === 'percent'
-        ? ((settings.value / settings.max) * 100).toFixed(1) + '%'
-        : settings.value.toFixed(1);
-      valueEl.textContent = displayValue;
-      unitEl.textContent = settings.unit || '';
-      canvas.setAttribute('role','img');
-      canvas.setAttribute('aria-label', `Wartość: ${displayValue} ${settings.unit || ''}`);
-    }
-
-    // panel controls
-    const settingsBtn = document.querySelector('.settings-btn');
-    const panel = document.getElementById('settingsPanel');
-    const applyBtn = document.getElementById('applySettings');
-    const closeBtn = document.getElementById('closePanel');
-
-    function openPanel() {
-      panel.classList.add('open');
-      panel.setAttribute('aria-hidden','false');
-    }
-    function closePanel() {
-      panel.classList.remove('open');
-      panel.setAttribute('aria-hidden','true');
-    }
-
-    settingsBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      // wypełnij pola
-      document.getElementById('displayMode').value = settings.mode;
-      document.getElementById('colorDirection').value = settings.colorDirection;
-      document.getElementById('thresholdsInput').value = settings.thresholds.join(',');
-      panel.classList.toggle('open');
-      panel.setAttribute('aria-hidden', panel.classList.contains('open') ? 'false' : 'true');
-    });
-
-    closeBtn.addEventListener('click', (e)=> { e.stopPropagation(); closePanel(); });
-
-    // click outside closes panel
-    document.addEventListener('click', () => {
-      if (panel.classList.contains('open')) closePanel();
-    });
-    panel.addEventListener('click', (e)=> e.stopPropagation());
-
-    applyBtn.addEventListener('click', (e) => {
-      const mode = document.getElementById('displayMode').value;
-      const colorDirection = document.getElementById('colorDirection').value;
-      const thresholdsInput = document.getElementById('thresholdsInput').value;
-      const thresholds = thresholdsInput
-        .split(',')
-        .map(v => parseFloat(v.trim()))
-        .filter(v => !isNaN(v))
-        .map(v => Math.min(Math.max(v,0),1));
-      settings.mode = mode;
-      settings.colorDirection = colorDirection;
-      if (thresholds.length) settings.thresholds = thresholds;
-      try { localStorage.setItem('gaugeSettings', JSON.stringify(settings)); } catch(e){}
-      drawGauge();
-      closePanel();
-    });
-
-    window.addEventListener('load', () => {
-      try {
-        const saved = localStorage.getItem('gaugeSettings');
-        if (saved) settings = Object.assign(settings, JSON.parse(saved));
-      } catch(e){}
-      // ensure canvas CSS size if missing
-      if (!canvas.style.width) { canvas.style.width = '128px'; canvas.style.height = '128px'; }
-      drawGauge();
-    });
-
-    // demo updates (remove in production)
-    setInterval(() => {
-      const jitter = (Math.random()-0.5) * 3;
-      settings.value = Math.min(Math.max(+settings.value + jitter, settings.min), settings.max);
-      drawGauge();
-    }, 2000);
-
-    const ro = new ResizeObserver(() => drawGauge());
-    ro.observe(canvas);
-  </script>
-</body>
-</html>
+/* styl tła i paska na canvasie */
+canvas {
+  transform: rotate(-90deg); /* obrót żeby start był u góry */
+}
