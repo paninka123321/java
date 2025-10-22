@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Widget — Liczba aktywnych użytkowników</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f7f7f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .stat-widget {
+      width: 120px;
+      height: 120px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      transition: transform 0.2s ease;
+    }
+
+    .stat-widget:hover {
+      transform: translateY(-2px);
+    }
+
+    .stat-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .stat-number {
+      font-size: 28px;
+      font-weight: 700;
+      color: #ff4b3e; /* czerwony akcent */
+    }
+
+    .stat-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: #222;
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .stat-title {
+      text-align: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: #222;
+      line-height: 1.3;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="stat-widget">
+    <div class="stat-top">
+      <div class="stat-number" id="userCount">6</div>
+      <div class="stat-icon">
+        <!-- ikona wzrostu (SVG) -->
+        <svg viewBox="0 0 24 24">
+          <path d="M3 17l6-6 4 4 8-8"></path>
+          <path d="M14 7h7v7"></path>
+        </svg>
+      </div>
+    </div>
+    <div class="stat-title">Liczba aktywnych<br>użytkowników</div>
+  </div>
+
+  <script>
+    // animacja zmiany wartości
+    let count = 6;
+    const el = document.getElementById('userCount');
+
+    setInterval(() => {
+      count += Math.floor(Math.random() * 3) - 1; // symulacja zmian
+      if (count < 0) count = 0;
+      el.textContent = count;
+    }, 2000);
+  </script>
+
+</body>
+</html>
