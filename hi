@@ -1,134 +1,104 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Widget Baterii</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
+<div class="battery-widget">
+  <!-- SVG pierścień -->
+  <svg id="batterySVG" width="120" height="120" viewBox="0 0 120 120">
+    <!-- Szare tło -->
+    <circle
+      cx="60"
+      cy="60"
+      r="52"
+      stroke="#3a3a3c"
+      stroke-width="10"
+      fill="none"
+    />
+    <!-- Zielony pasek (będzie animowany) -->
+    <circle
+      id="batteryProgress"
+      cx="60"
+      cy="60"
+      r="52"
+      stroke="#4cd964"
+      stroke-width="10"
+      fill="none"
+      stroke-linecap="round"
+      stroke-dasharray="326"  <!-- obwód koła -->
+      stroke-dashoffset="326" <!-- start od pustego -->
+      transform="rotate(-90 60 60)" <!-- żeby zaczynało się od góry -->
+    />
+  </svg>
 
-  <!-- pojedynczy widget baterii -->
-  <div class="battery-widget">
-    <canvas id="batteryCanvas" width="300" height="300"></canvas>
-    <div class="battery-content">
-      <div class="battery-icon">🔋</div> <!-- ikonka w środku -->
-      <div class="battery-percent" id="batteryPercent">75%</div> <!-- tekst procentowy -->
-    </div>
+  <!-- Zawartość w środku -->
+  <div class="battery-content">
+    <div class="battery-icon">🔋</div>
+    <div id="batteryPercent" class="battery-percent">75%</div>
   </div>
+</div>
 
-  <script src="script.js"></script>
-</body>
-</html>
+<script>
+  const batteryProgress = document.getElementById("batteryProgress");
+  const percentText = document.getElementById("batteryPercent");
 
-js:
+  let batteryValue = 75; // wartość początkowa
+  const circleLength = 2 * Math.PI * 52; // obwód koła
 
-const canvas = document.getElementById("batteryCanvas");
-const ctx = canvas.getContext("2d");
-const percentText = document.getElementById("batteryPercent");
+  function drawBatteryGauge(value) {
+    const fraction = Math.min(Math.max(value / 100, 0), 1);
+    const offset = circleLength * (1 - fraction);
+    batteryProgress.style.strokeDashoffset = offset;
+    percentText.textContent = `${Math.round(value)}%`;
+  }
 
-// skalowanie pod urządzenie - moze pomoze w rozpikselowanych krawedziach
-const scale = window.devicePixelRatio || 1;
-canvas.width = 80 * scale;  // dopasuj do swojego rozmiaru
-canvas.height = 80 * scale;
-ctx.scale(scale, scale);
+  function updateGauge(newValue) {
+    batteryValue = newValue;
+    drawBatteryGauge(batteryValue);
+  }
 
-let batteryValue = 75; // wartość początkowa (w procentach) <- wartość do z czytania z DSL
-const color = "#4cd964"; // zielony kolor paska
-
-// Funkcja rysująca okrąg procentowy (gauge) 
-function drawBatteryGauge(value) {
-  const size = 80;
-  const center = size / 2;
-  const radius = center - 8;
-  const startAngle = 0;
-  const endAngle = 2 * Math.PI;
-
-  ctx.clearRect(0, 0, size, size);
-
-  // Samo szare kóło - leżace jako backround dla wyświetlanej potem wartości 
-  ctx.beginPath();
-  ctx.arc(center, center, radius, startAngle, endAngle);
-  ctx.strokeStyle = "#3a3a3c"; // ciemnoszary pierścień
-  ctx.lineWidth = 10;
-  ctx.stroke();
-
-  // Pasek pokazujący poziom baterii - nałożony już na szare kółko
-  const fraction = Math.min(Math.max(value / 100, 0), 1); // ograniczamy do 0–1 (bo max 100%, ale oczywiście już na produkcje można zmienić)
-  const progressAngle = startAngle + fraction * endAngle;
-
-  ctx.beginPath();
-  ctx.arc(center, center, radius, startAngle, progressAngle);
-  ctx.strokeStyle = color; // kolor paska
-  ctx.lineWidth = 10;
-  ctx.lineCap = "round";
-  ctx.stroke();
-
-  // Tekst aktualizacji (w środku)
-  percentText.textContent = `${Math.round(value)}%`;
-}
-
-
-// Dynamicznej zmiany wartości baterii dla prezentacji
-function updateGauge(newValue) {
-  batteryValue = newValue;
+  // pierwsze rysowanie
   drawBatteryGauge(batteryValue);
-}
 
-// pierwsze rysowanie
-drawBatteryGauge(batteryValue);
+  // symulacja zmian co 2 sekundy
+  let demoVal = 75;
+  setInterval(() => {
+    demoVal = (demoVal + 5) % 101;
+    updateGauge(demoVal);
+  }, 2000);
+</script>
 
-// PRZYKŁAD: symulacja zmian
-let demoVal = 75;
-setInterval(() => {
-  demoVal = (demoVal + 5) % 101;
-  updateGauge(demoVal);
-}, 2000);
+<style>
+  .battery-widget {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
 
+  .battery-content {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: black;
+    font-family: sans-serif;
+  }
 
+  .battery-icon {
+    font-size: 26px;
+    margin-bottom: 4px;
+  }
 
-css:
-.battery-widget {
-  position: relative;
-  width: 120px;
-  height: 120px;
-  background: #fff; /* białe tło */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-}
+  .battery-percent {
+    font-size: 16px;
+    font-weight: 600;
+  }
 
-/* pozycjonowanie ikonki i tekstu w środku */
-.battery-content {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: black;
-  font-family: sans-serif;
-}
-
-.battery-icon {
-  font-size: 26px;
-  margin-bottom: 4px;
-}
-
-.battery-percent {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-/* styl tła i paska na canvasie */
-canvas {
-  image-rendering: auto;
-  transform: rotate(-90deg); /* obrót żeby start był u góry */
-}
-
-#batteryCanvas {
-  width: 120px;
-  height: 120px;
-}
+  /* animacja wygładzająca ruch */
+  #batteryProgress {
+    transition: stroke-dashoffset 0.8s ease;
+  }
+</style>
