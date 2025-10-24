@@ -1,8 +1,225 @@
-Unable to resolve signature of property decorator when called as an expression.
-  No overload matches this call.
-    Overload 1 of 3, '(target: ClassAccessorDecoratorTarget<UserWidget, boolean>, context: ClassAccessorDecoratorContext<UserWidget, boolean>): ClassAccessorDecoratorResult<...>', gave the following error.
-      Argument of type 'undefined' is not assignable to parameter of type 'ClassAccessorDecoratorTarget<UserWidget, boolean>'.
-    Overload 2 of 3, '(target: (value: boolean) => void, context: ClassSetterDecoratorContext<UserWidget, boolean>): (this: UserWidget, value: boolean) => void', gave the following error.
-      Argument of type 'undefined' is not assignable to parameter of type '(value: boolean) => void'.
-    Overload 3 of 3, '(protoOrDescriptor: Object, name: PropertyKey, descriptor?: PropertyDescriptor | undefined): any', gave the following error.
-      Argument of type 'undefined' is not assignable to parameter of type 'Object'.ts(1240)
+import { LitElement, html, css } from 'lit';
+import { property, state } from 'lit/decorators.js';
+
+export class UserWidget extends LitElement {
+  // === prywatne pola z dekoratorem ===
+  @property({ type: Number })
+  private _users: number = 93656;
+
+  @property({ type: Number })
+  private _change: number = 346;
+
+  @property({ type: String })
+  private _title: string = 'Total Users';
+
+  @property({ type: Boolean })
+  private _autoUpdate: boolean = true;
+
+  @state()
+  private _animClass: string = '';
+
+  private _interval?: number;
+
+  // === getter i setter dla rekatywności ===
+  get users(): number {
+    return this._users;
+  }
+  set users(value: number) {
+    const old = this._users;
+    this._users = value;
+    this.requestUpdate('users', old);
+  }
+
+  get change(): number {
+    return this._change;
+  }
+  set change(value: number) {
+    const old = this._change;
+    this._change = value;
+    this.requestUpdate('change', old);
+  }
+
+  get title(): string {
+    return this._title;
+  }
+  set title(value: string) {
+    const old = this._title;
+    this._title = value;
+    this.requestUpdate('title', old);
+  }
+
+  get autoUpdate(): boolean {
+    return this._autoUpdate;
+  }
+  set autoUpdate(value: boolean) {
+    const old = this._autoUpdate;
+    this._autoUpdate = value;
+    this.requestUpdate('autoUpdate', old);
+    this._setupInterval();
+  }
+
+  // === CSS ===
+  static styles = css`
+    :host {
+      font-family: 'Segoe UI', sans-serif;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+      padding: 16px 20px;
+      width: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.2s ease;
+    }
+
+    :host(:hover) {
+      transform: translateY(-2px);
+    }
+
+    .user-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .user-value-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .user-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #000;
+      letter-spacing: 0.5px;
+    }
+
+    .user-change {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .user-change svg {
+      width: 12px;
+      height: 12px;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .animate {
+      animation: fadeIn 0.6s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(3px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  `;
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._setupInterval();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._interval) clearInterval(this._interval);
+  }
+
+  private _setupInterval() {
+    if (this._interval) clearInterval(this._interval);
+    if (this.autoUpdate) {
+      this._interval = window.setInterval(() => this._simulateChange(), 3000);
+    }
+  }
+
+  private _simulateChange() {
+    const diff = Math.floor(Math.random() * 600 - 300);
+    this.change = diff;
+    this.users += diff;
+
+    // animacja
+    this._animClass = '';
+    setTimeout(() => (this._animClass = 'animate'), 10);
+  }
+
+  private _getColor(diff: number) {
+    return diff >= 0 ? '#4cd964' : '#ff3b30';
+  }
+
+  render() {
+    const color = this._getColor(this.change);
+    const arrowPath = this.change >= 0 ? 'M18 15l-6-6-6 6' : 'M6 9l6 6 6-6';
+
+    return html`
+      <div class="user-title">${this.title}</div>
+      <div class="user-value-row">
+        <div class="user-value ${this._animClass}">
+          ${this.users.toLocaleString('pl-PL')}
+        </div>
+        <div class="user-change" style="color: ${color}">
+          <svg viewBox="0 0 24 24" style="stroke:${color}">
+            <path d=${arrowPath}></path>
+          </svg>
+          ${this.change >= 0 ? '+' : ''}${this.change}
+        </div>
+      </div>
+    `;
+  }
+}
+
+customElements.define('user-widget', UserWidget);
+
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Widget — Liczba użytkowników</title>
+  <style>
+    body {
+      background: #f7f7f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Tutaj wstawiamy komponent -->
+  <user-widget></user-widget>
+
+  <!-- Import naszego komponentu (przepisany TS powinien być skompilowany do JS) -->
+  <script type="module">
+    import './user-widget.js';
+
+    const widget = document.querySelector('user-widget');
+
+    // Przykład dynamicznej zmiany wartości z zewnątrz
+    setTimeout(() => {
+      widget.users = 120000;
+      widget.change = 250;
+      widget.title = 'Active Users';
+    }, 5000);
+  </script>
+  
+</body>
+</html>
