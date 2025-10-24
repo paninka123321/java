@@ -1,4 +1,4 @@
-ORA-20999: Failed to parse SQL query! ORA-06550: line 19, column 9: ORA-00933: SQL command not properly ended 
+ORA-20999: Failed to parse SQL query! ORA-06550: line 19, column 53: ORA-00904: "USLUGA_LEV1": invalid identifier
 select 
 --przypisanie kazdemu poziomowi (wartosci liczbowej) kolumny 
     case when nvl(:P2_LEVEL,0)=0 then nvl(USLUGA_LEV1, 'null') 
@@ -16,11 +16,10 @@ where
         nvl(:P2_LEVEL,0)=0
         or :P2_LEVEL=1 
         or :P2_LEVEL=2 
-    ),
 group by
-    case when nvl(:P2_LEVEL,0)=0 then nvl(LEV1_DESC, 'null')
-        when nvl(:P2_LEVEL,0)=1 then nvl(LEV2_DESC, 'null')
-        when nvl(:P2_LEVEL,0)=2 then nvl(LEV3_DESC, 'null') 
+    case when nvl(:P2_LEVEL,0)=0 then nvl(USLUGA_LEV1, 'null')
+        when nvl(:P2_LEVEL,0)=1 then nvl(KATEGORIA, 'null')
+        when nvl(:P2_LEVEL,0)=2 then nvl(PODKATEGORIA, 'null') 
 
     end /*as LEV_DESC*/
 
