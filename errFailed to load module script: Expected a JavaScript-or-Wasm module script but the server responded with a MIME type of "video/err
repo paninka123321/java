@@ -1,1 +1,68 @@
-Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of "video/mp2t". Strict MIME type checking is enforced for module scripts per HTML spec.
+const chartLine = document.getElementById("chartLine");
+const growthPercent = document.getElementById("growthPercent");
+const growthArrow = document.getElementById("growthArrow");
+const indicator = document.getElementById("growthIndicator");
+const daysContainer = document.getElementById("growthDays");
+
+// generate last 7 days (ending today)
+function getLast7Days() {
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const today = new Date().getDay();
+  return Array.from({ length: 7 }, (_, i) => days[(today - 6 + i + 7) % 7]);
+}
+
+// simulate historical price data
+let prices = Array.from({ length: 7 }, () => 50 + Math.random() * 20);
+
+function calculateGrowth(newPrice, oldPrice) {
+  return ((newPrice - oldPrice) / oldPrice) * 100;
+}
+
+function generatePath(values, width = 300, height = 80) {
+  const step = width / (values.length - 1);
+  return values
+    .map((val, i) => {
+      const x = i * step;
+      const y = height - ((val - 40) / 40) * height; // scale values
+      return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+    })
+    .join(" ");
+}
+
+function renderDays() {
+  daysContainer.innerHTML = getLast7Days()
+    .map((d) => `<span>${d}</span>`)
+    .join("");
+}
+
+function updateWidget() {
+  // new simulated price
+  const lastPrice = prices[prices.length - 1];
+  const newPrice = lastPrice + (Math.random() - 0.5) * 8; // ±4 variation
+  prices.push(newPrice);
+  prices.shift();
+
+  // calculate growth %
+  const growth = calculateGrowth(newPrice, lastPrice);
+  const growthText = `${growth >= 0 ? "+" : ""}${growth.toFixed(1)}%`;
+  growthPercent.textContent = growthText;
+
+  // arrow + color
+  if (growth >= 0) {
+    growthArrow.textContent = "➚";
+    indicator.className = "indicator up";
+  } else {
+    growthArrow.textContent = "⬊";
+    indicator.className = "indicator down";
+  }
+
+  // update SVG path
+  chartLine.setAttribute("d", generatePath(prices));
+}
+
+// init
+renderDays();
+updateWidget();
+
+// update every 3 seconds
+setInterval(updateWidget, 3000);
