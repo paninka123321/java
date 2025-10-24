@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Growth Widget</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="growth-widget">
+    <div class="growth-header">
+      <div class="growth-label">Growth</div>
+      <div class="growth-period">Last 7 days</div>
+    </div>
+
+    <div class="growth-value">
+      <span id="growthPercent">0%</span>
+      <span id="growthIndicator" class="indicator"><span id="growthArrow">➚</span></span>
+    </div>
+
+    <svg id="growthChart" viewBox="0 0 300 80" preserveAspectRatio="none">
+      <path id="chartLine" d="" fill="none" stroke="#4cd964" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+
+    <div class="growth-days" id="growthDays"></div>
+  </div>
+
+  <script type="module" src="main.ts"></script>
+</body>
+</html>
+
+body {
+  font-family: "Segoe UI", Roboto, sans-serif;
+  background: #f6f6f6;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.growth-widget {
+  background: linear-gradient(135deg, #ffffff, #f1f4ff);
+  border-radius: 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  width: 300px;
+  height: 200px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.growth-widget:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+/* Nagłówek */
+.growth-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.growth-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.growth-period {
+  font-size: 12px;
+  color: #777;
+  background: #f0f0f0;
+  border-radius: 12px;
+  padding: 2px 8px;
+}
+
+/* Wartość i wskaźnik */
+.growth-value {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 36px;
+  font-weight: 700;
+  color: #111;
+}
+
+.indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.indicator.up {
+  background-color: rgba(0, 200, 81, 0.15);
+  color: #00c851;
+}
+
+.indicator.down {
+  background-color: rgba(255, 59, 48, 0.15);
+  color: #ff3b30;
+}
+
+/* Wykres */
+#growthChart {
+  width: 100%;
+  height: 80px;
+  margin-top: -4px;
+}
+
+/* Dni tygodnia */
+.growth-days {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #888;
+}
+const chartLine = document.getElementById("chartLine") as SVGPathElement;
+const growthPercent = document.getElementById("growthPercent") as HTMLElement;
+const growthArrow = document.getElementById("growthArrow") as HTMLElement;
+const indicator = document.getElementById("growthIndicator") as HTMLElement;
+const daysContainer = document.getElementById("growthDays") as HTMLElement;
+
+// generuj dni tygodnia (ostatnie 7 dni)
+function getLast7Days(): string[] {
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const today = new Date().getDay();
+  return Array.from({ length: 7 }, (_, i) => days[(today - 6 + i + 7) % 7]);
+}
+
+// symulacja danych cenowych
+let prices: number[] = Array.from({ length: 7 }, () => 50 + Math.random() * 20);
+
+function calculateGrowth(newPrice: number, oldPrice: number): number {
+  return ((newPrice - oldPrice) / oldPrice) * 100;
+}
+
+function generatePath(values: number[], width = 300, height = 80): string {
+  const step = width / (values.length - 1);
+  return values
+    .map((val, i) => {
+      const x = i * step;
+      const y = height - ((val - 40) / 40) * height; // przeskalowane wartości
+      return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+    })
+    .join(" ");
+}
+
+function renderDays() {
+  daysContainer.innerHTML = getLast7Days().map(d => `<span>${d}</span>`).join("");
+}
+
+function updateWidget() {
+  // nowa symulowana cena
+  const lastPrice = prices[prices.length - 1];
+  const newPrice = lastPrice + (Math.random() - 0.5) * 8; // +-4
+  prices.push(newPrice);
+  prices.shift();
+
+  // oblicz procentowy wzrost
+  const growth = calculateGrowth(newPrice, lastPrice);
+  const growthText = `${growth >= 0 ? "+" : ""}${growth.toFixed(1)}%`;
+  growthPercent.textContent = growthText;
+
+  // strzałka i kolor
+  if (growth >= 0) {
+    growthArrow.textContent = "➚";
+    indicator.className = "indicator up";
+  } else {
+    growthArrow.textContent = "⬊";
+    indicator.className = "indicator down";
+  }
+
+  // aktualizuj ścieżkę SVG
+  chartLine.setAttribute("d", generatePath(prices));
+}
+
+// inicjalizacja
+renderDays();
+updateWidget();
+
+// aktualizuj co 3 sekundy
+setInterval(updateWidget, 3000);
