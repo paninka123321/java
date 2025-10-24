@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Widget — Liczba użytkowników</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f7f7f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .user-widget {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      padding: 16px 20px;
+      width: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.2s ease;
+    }
+
+    .user-widget:hover {
+      transform: translateY(-2px);
+    }
+
+    .user-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .user-value-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .user-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #000;
+      letter-spacing: 0.5px;
+    }
+
+    .user-change {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #4cd964; /* zielony wzrost */
+    }
+
+    .user-change svg {
+      width: 12px;
+      height: 12px;
+      fill: none;
+      stroke: #4cd964;
+      stroke-width: 2;
+    }
+
+    /* animacja zmiany liczby */
+    .animate {
+      animation: fadeIn 0.6s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(3px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="user-widget">
+    <div class="user-title">Total Users</div>
+    <div class="user-value-row">
+      <div class="user-value" id="userCount">93,656</div>
+      <div class="user-change" id="userChange">
+        <svg viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"></path></svg>
+        +346
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Losowa symulacja zmian wartości
+    const userCountEl = document.getElementById("userCount");
+    const userChangeEl = document.getElementById("userChange");
+    let users = 93656;
+
+    setInterval(() => {
+      // symulacja wzrostu lub spadku
+      const diff = Math.floor(Math.random() * 600 - 300);
+      users += diff;
+
+      // aktualizacja liczby użytkowników
+      userCountEl.textContent = users.toLocaleString("pl-PL");
+
+      // aktualizacja zmiany
+      const changeVal = diff > 0 ? `+${diff}` : diff;
+      userChangeEl.innerHTML = `
+        <svg viewBox="0 0 24 24">
+          <path d="${diff >= 0 ? 'M18 15l-6-6-6 6' : 'M6 9l6 6 6-6'}"></path>
+        </svg>
+        ${changeVal}
+      `;
+      userChangeEl.style.color = diff >= 0 ? '#4cd964' : '#ff3b30';
+      userChangeEl.querySelector('svg').style.stroke = diff >= 0 ? '#4cd964' : '#ff3b30';
+
+      // animacja
+      userCountEl.classList.remove('animate');
+      void userCountEl.offsetWidth; // reset animacji
+      userCountEl.classList.add('animate');
+    }, 3000);
+  </script>
+
+</body>
+</html>
