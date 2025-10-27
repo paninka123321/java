@@ -1,9 +1,23 @@
 SELECT
-    -- kolumny nadrzędne zawsze pokazane
+    -- kolumny nadrzędne zawsze widoczne
     CASE WHEN :P2_LEVEL >= 0 THEN USŁUGA_LEV1 END AS USŁUGA_LEV1,
     CASE WHEN :P2_LEVEL >= 1 THEN KATEGORIA END AS KATEGORIA,
     CASE WHEN :P2_LEVEL >= 2 THEN PODKATEGORIA END AS PODKATEGORIA,
     
+    -- kolumna do klikania (aktualny poziom)
+    CASE NVL(:P2_LEVEL, 0)
+        WHEN 0 THEN USŁUGA_LEV1
+        WHEN 1 THEN KATEGORIA
+        WHEN 2 THEN PODKATEGORIA
+    END AS LEVEL_DESC,
+
+    -- numer poziomu (używany w dynamic action)
+    CASE NVL(:P2_LEVEL, 0)
+        WHEN 0 THEN 0
+        WHEN 1 THEN 1
+        WHEN 2 THEN 2
+    END AS LEV_ID,
+
     SUM(VALUE) AS VALUE
 FROM DO_SZKOLENIA_DRAZENIE
 WHERE
@@ -13,5 +27,15 @@ WHERE
 GROUP BY
     CASE WHEN :P2_LEVEL >= 0 THEN USŁUGA_LEV1 END,
     CASE WHEN :P2_LEVEL >= 1 THEN KATEGORIA END,
-    CASE WHEN :P2_LEVEL >= 2 THEN PODKATEGORIA END
+    CASE WHEN :P2_LEVEL >= 2 THEN PODKATEGORIA END,
+    CASE NVL(:P2_LEVEL, 0)
+        WHEN 0 THEN USŁUGA_LEV1
+        WHEN 1 THEN KATEGORIA
+        WHEN 2 THEN PODKATEGORIA
+    END,
+    CASE NVL(:P2_LEVEL, 0)
+        WHEN 0 THEN 0
+        WHEN 1 THEN 1
+        WHEN 2 THEN 2
+    END
 ORDER BY 1,2,3;
