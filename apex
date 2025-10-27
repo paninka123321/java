@@ -1,3 +1,9 @@
-var pathParts = $v("P2_PATH") ? $v("P2_PATH").split('|') : [];
-$s("P2_PREVIOUS_LEVEL", lev > 0 ? pathParts[lev - 1] : null);
-$s("P2_PATH", lev > 0 ? pathParts.slice(0, lev).join('|') : '');
+CASE 
+  WHEN :P2_LEVEL = 0 THEN NULL
+  ELSE REGEXP_SUBSTR(:P2_PATH,'[^|]+',1,:P2_LEVEL)
+END
+
+CASE
+  WHEN :P2_LEVEL = 0 THEN NULL
+  ELSE REGEXP_SUBSTR(:P2_PATH,'^(?:[^|]+\|){0,'||(:P2_LEVEL-1)||'}[^|]+')
+END
