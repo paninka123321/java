@@ -1,9 +1,6 @@
-CASE 
-  WHEN :P2_LEVEL = 0 THEN NULL
-  ELSE REGEXP_SUBSTR(:P2_PATH,'[^|]+',1,:P2_LEVEL)
-END
-
 CASE
-  WHEN :P2_LEVEL = 0 THEN NULL
-  ELSE REGEXP_SUBSTR(:P2_PATH,'^(?:[^|]+\|){0,'||(:P2_LEVEL-1)||'}[^|]+')
+    WHEN INSTR(:P2_PATH, '|', -1) > 0 THEN 
+        SUBSTR(:P2_PATH, 1, INSTR(:P2_PATH, '|', -1) - 1)
+    ELSE 
+        NULL
 END
