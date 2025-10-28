@@ -1,46 +1,28 @@
-SELECT
-    CASE WHEN safe_level >= 0 THEN USŁUGA_LEV1 END AS USŁUGA_LEV1,
-    CASE WHEN safe_level >= 1 THEN KATEGORIA END AS KATEGORIA,
-    CASE WHEN safe_level >= 2 THEN PODKATEGORIA END AS PODKATEGORIA,
+// Pobierz referencję do Interactive Grid
+var ig$ = apex.region("SLOWNIK").widget();
 
-    CASE safe_level
-        WHEN 0 THEN USŁUGA_LEV1
-        WHEN 1 THEN KATEGORIA
-        WHEN 2 THEN PODKATEGORIA
-    END AS LEVEL_DESC,
+// Sprawdź, czy IG jest dostępny
+if (ig$) {
+    var model = ig$.interactiveGrid("getViews", "grid").model;
 
-    CASE safe_level
-        WHEN 0 THEN 1
-        WHEN 1 THEN 2
-        WHEN 2 THEN 3
-    END AS LEV_ID,
+    // Pobierz pierwszy wiersz (zakładam, że masz tylko jeden z wartościami domyślnymi)
+    var rec = model.getRecord(model.getRecordIds()[0]);
 
-    SUM(VALUE) AS VALUE
-FROM DO_SZKOLENIA_DRAZENIE,
-(
-  -- obliczamy bezpieczną wersję level (liczba), jeśli :P2_LEVEL jest numeryczne
-  SELECT CASE 
-           WHEN regexp_like(:P2_LEVEL, '^\d+$') THEN to_number(:P2_LEVEL) 
-           ELSE 0 
-         END AS safe_level
-  FROM dual
-) SL
-WHERE
-    SL.safe_level = 0
- OR (SL.safe_level = 1 AND USŁUGA_LEV1 = TO_CHAR(:P2_PREVIOUS_LEVEL))
- OR (SL.safe_level = 2 AND (USŁUGA_LEV1 || '|' || KATEGORIA) = TO_CHAR(:P2_PATH))
-GROUP BY
-    CASE WHEN SL.safe_level >= 0 THEN USŁUGA_LEV1 END,
-    CASE WHEN SL.safe_level >= 1 THEN KATEGORIA END,
-    CASE WHEN SL.safe_level >= 2 THEN PODKATEGORIA END,
-    CASE SL.safe_level
-        WHEN 0 THEN USŁUGA_LEV1
-        WHEN 1 THEN KATEGORIA
-        WHEN 2 THEN PODKATEGORIA
-    END,
-    CASE SL.safe_level
-        WHEN 0 THEN 1
-        WHEN 1 THEN 2
-        WHEN 2 THEN 3
-    END
-ORDER BY 1,2,3;
+    if (rec) {
+        // Pobierz wartości kolumn
+        var maxZScore = model.getValue(rec, "MAX_Z_SCORE");
+        var maxDiff   = model.getValue(rec, "MAX_DIFF");
+
+        // Ustaw wartości w filtrach (elementy strony)
+        apex.item("P4_MAX_Z_SCORE").setValue(maxZScore);
+        apex.item("P4_MAX_DIFF").setValue(maxDiff);
+
+        // (Opcjonalnie) — automatycznie odśwież wykres/tabelę po ustawieniu
+        // apex.region("TABELA").refresh();
+        // apex.region("WYKRES").refresh();
+    } else {
+        console.warn("Nie znaleziono żadnych rekordów w regionie SŁOWNIK.");
+    }
+} else {
+    console.error("Nie znaleziono regionu SŁOWNIK — sprawdź Static ID.");
+}
