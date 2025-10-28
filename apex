@@ -1,11 +1,9 @@
-var ig$ = apex.region("SLOWNIK").widget();
-if (ig$) {
-    var model = ig$.interactiveGrid("getViews", "grid").model;
-    var recs = model.getRecords(); // pobierz wszystkie wiersze
+// Poczekaj aż IG będzie gotowy
+apex.region("SLOWNIK").widget().interactiveGrid("getViews", "grid").model.promise().then(function(model) {
+    var recs = model.getRecords();
     var segment = apex.item("P4_SEGMENT").getValue();
     var targetRec = null;
 
-    // znajdź wiersz odpowiadający wybranemu segmentowi
     for (var i = 0; i < recs.length; i++) {
         if (model.getValue(recs[i], "SEGMENT") === segment) {
             targetRec = recs[i];
@@ -14,9 +12,7 @@ if (ig$) {
     }
 
     if (targetRec) {
-        var val = model.getValue(targetRec, "MAX_Z_SCORE");
-        apex.item("P4_MAX_Z_SCORE").setValue(val);
-    } else {
-        console.warn("Nie znaleziono wartości domyślnej dla segmentu: " + segment);
+        apex.item("P4_MAX_Z_SCORE").setValue(model.getValue(targetRec, "MAX_Z_SCORE"));
+        apex.item("P4_MAX_DIFF").setValue(model.getValue(targetRec, "MAX_DIFF"));
     }
-}
+});
