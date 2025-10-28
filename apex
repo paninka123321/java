@@ -1,28 +1,22 @@
-// Pobierz referencję do Interactive Grid
 var ig$ = apex.region("SLOWNIK").widget();
-
-// Sprawdź, czy IG jest dostępny
 if (ig$) {
     var model = ig$.interactiveGrid("getViews", "grid").model;
+    var recs = model.getRecords(); // pobierz wszystkie wiersze
+    var segment = apex.item("P4_SEGMENT").getValue();
+    var targetRec = null;
 
-    // Pobierz pierwszy wiersz (zakładam, że masz tylko jeden z wartościami domyślnymi)
-    var rec = model.getRecord(model.getRecordIds()[0]);
-
-    if (rec) {
-        // Pobierz wartości kolumn
-        var maxZScore = model.getValue(rec, "MAX_Z_SCORE");
-        var maxDiff   = model.getValue(rec, "MAX_DIFF");
-
-        // Ustaw wartości w filtrach (elementy strony)
-        apex.item("P4_MAX_Z_SCORE").setValue(maxZScore);
-        apex.item("P4_MAX_DIFF").setValue(maxDiff);
-
-        // (Opcjonalnie) — automatycznie odśwież wykres/tabelę po ustawieniu
-        // apex.region("TABELA").refresh();
-        // apex.region("WYKRES").refresh();
-    } else {
-        console.warn("Nie znaleziono żadnych rekordów w regionie SŁOWNIK.");
+    // znajdź wiersz odpowiadający wybranemu segmentowi
+    for (var i = 0; i < recs.length; i++) {
+        if (model.getValue(recs[i], "SEGMENT") === segment) {
+            targetRec = recs[i];
+            break;
+        }
     }
-} else {
-    console.error("Nie znaleziono regionu SŁOWNIK — sprawdź Static ID.");
+
+    if (targetRec) {
+        var val = model.getValue(targetRec, "MAX_Z_SCORE");
+        apex.item("P4_MAX_Z_SCORE").setValue(val);
+    } else {
+        console.warn("Nie znaleziono wartości domyślnej dla segmentu: " + segment);
+    }
 }
